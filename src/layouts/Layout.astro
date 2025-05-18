@@ -1,5 +1,11 @@
+---
+import Heder_hybid from '../components/heder_hybid.svelte';
+import "../styles/global.css";
+
+---
+
 <!doctype html>
-<html lang="en">
+<html lang="hebrew" dir="rtl">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
@@ -8,6 +14,7 @@
 		<title>Astro Basics</title>
 	</head>
 	<body>
+
 		<slot />
 	</body>
 </html>
@@ -16,7 +23,11 @@
 	html,
 	body {
 		margin: 0;
-		width: 100%;
-		height: 100%;
+    
+	}
+	body{
+	width: 100%;
+    /* background-image: linear-gradient(to bottom, #cacaca, #000000); */
+    /* background-size: cover; */
 	}
 </style>

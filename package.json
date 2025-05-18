@@ -9,6 +9,20 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^5.7.12"
+    "@astrojs/svelte": "^7.0.13",
+    "astro": "^5.7.12",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "svelte": "^5.28.2",
+    "svelte-motion": "^0.12.2",
+    "svelte-ux": "^1.0.4",
+    "tailwind-merge": "^3.2.0",
+    "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.6",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.6"
   }
 }
