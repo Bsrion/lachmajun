@@ -27,22 +27,55 @@ import {
 
   });
   let showInputs = $state(false);
+const optionsByCategory = {
+  'סלטים': ['חומוס', 'טחינה', 'סלט גזר', 'סלט כרוב', 'סלט ירקות קצוץ'],
+  'רטבים לסלט': ['וינגרט', 'רוטב שום לימון', 'בלסמי', 'צ׳ילי מתוק'],
+  'מבחר עיקריות': ['שניצל', 'פרגיות בתנור', 'קציצות ברוטב עגבניות', 'חזה עוף', 'מוסקה'],
+  'מבחר תוספות': ['אורז לבן', 'קוסקוס', 'תפוחי אדמה בתנור', 'פירה'],
+  'מבחר ממולאים / ראשונות': ['עלי גפן', 'קובה', 'בורקס גבינה', 'לביבות ירק'],
+  'לחמים': ['לחמניות', 'פיתות', 'חלה'],
+  'שתייה': ['מים מינרלים', 'קולה', 'ספרייט', 'מים בטעמים'],
+  'חדפעמי': ['צלחות', 'סכום', 'כוסות', 'מפות'],
+  'אלומיניום לתיבול': ['מגש אלומיניום קטן', 'מגש אלומיניום גדול'],
+  'שונות': ['מגבונים', 'ניילון נצמד', 'נייר כסף']
+};
+let orderItems = $state([
+  { category: 'סלטים', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['סלטים'] },
+  { category: 'רטבים לסלט', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['רטבים לסלט'] },
+  { category: 'מבחר עיקריות', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['מבחר עיקריות'] },
+  { category: 'מבחר תוספות', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['מבחר תוספות'] },
+  { category: 'מבחר ממולאים / ראשונות', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['מבחר ממולאים / ראשונות'] },
+  { category: 'חד פעמי', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['חדפעמי'] },
+  { category: 'אלומיניום לתיבול', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['אלומיניום לתיבול'] },
+  { category: 'לחמים', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['לחמים'] },
+  { category: 'שתייה', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['שתייה'] },
+  { category: 'שונות', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['שונות'] },
+  { category: 'שונות', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['שונות'] }
+]);
 
-  let orderItems = $state([
-    { category: 'סלטים', name: '', quantity: 0 , amount : 0,  comment: ''},
-    { category: 'רטבים לסלט', name: '', quantity: 0 , amount : 0, comment: ''},
-    { category: 'מבחר עיקריות', name: '', quantity: 0, amount : 0, comment: '' },
-    { category: 'מבחר תוספות', name: '', quantity: 0, amount : 0, comment: '' },
-    { category: 'מבחר ממולאים / ראשונות', name: '', quantity: 0, amount : 0, comment: '' },
-    { category: 'חד פעמי', name: '', quantity: 0, amount : 0, comment: '' },
-    { category: 'אלומיניום לתיבול', name: '', quantity: 0, amount : 0, comment: '' },
-    { category: 'לחמים', name: '', quantity: 0, amount : 0, comment: '' },
-    { category: 'שתייה', name:'' ,quantity : 0 , amount : 0, comment:''},
-    { category: 'שונות', name: '', quantity: 0, amount : 0, comment:'' },
-    { category: 'שונות', name: '', quantity: 0, amount : 0, comment:'' },
-  ]);
+function maybeAddNewRow(item) {
+  // Check if this item is the last in its category
+  const itemsInCategory = orderItems.filter(i => i.category === item.category);
+  const isLast = itemsInCategory[itemsInCategory.length - 1] === item;
 
-  let toDoOrder = $derived.by(() => orderItems.filter(i => i.quantity > 0));
+  // If it's the last row in category and has a name or quantity > 0, add a new empty row
+  if (isLast && (item.name.trim() !== '' || item.quantity > 0)) {
+    orderItems = [
+      ...orderItems,
+      {
+        category: item.category,
+        name: '',
+        quantity: 0,
+        amount: 0,
+        comment: '',
+        options: optionsByCategory[item.category] || []
+      }
+    ];
+  }
+}
+
+
+  let toDoOrder = $derived.by(() => orderItems.filter(i => i.quantity > 0 && i.name !== ''));
 
   function printPage() {
     window.print();
@@ -225,7 +258,42 @@ let showcustomersForm = $state(false);
       <tbody>
         {#each orderItems.filter(i => i.category === category) as item}
           <tr class:orderdItem={item.quantity > 0}>
-                <td>{item.name}</td>
+                <td><select bind:value={item.name}>
+  <option value="" disabled>בחר</option>
+  {#each optionsByCategory[item.category] ?? [] as opt}
+    <option value={opt}>{opt}</option>
+  {/each}
+
+  <!-- Show custom name if it's not already in the list -->
+  {#if item.name && !optionsByCategory[item.category]?.includes(item.name)}
+    <option value={item.name}>{item.name}</option>
+  {/if}
+
+  <option value="אחר">אחר</option>
+</select>
+
+{#if item.name === 'אחר'}
+  <input
+    type="text"
+    placeholder="הקלד שם פריט"
+    bind:value={item.customName}
+    onkeydown={(e) => {
+      if (e.key === 'Enter' && item.customName.trim()) {
+        item.name = item.customName.trim();
+        item.customName = '';
+      }
+    }}
+    onblur={() => {
+      if (item.customName.trim()) {
+        item.name = item.customName.trim();
+        item.customName = '';
+      }
+    }}
+  />
+{/if}
+
+
+</td>
             <td>
               <input type="number" min="0" bind:value={item.quantity} />
             </td>
@@ -257,7 +325,7 @@ let showcustomersForm = $state(false);
 </div>
 
   <div class="orderCheckout">
-{#if toDoOrder.length === 0}
+{#if toDoOrder.length === 0 && toDoOrder}
 <h1>לא נוספו פריטים להזמנה</h1>
 {:else}
     <h2>הזמנה סופית</h2>
@@ -266,6 +334,7 @@ let showcustomersForm = $state(false);
         <tr>
           <th>פריט</th>
           <th>כמות</th>
+          <th>סה״כ</th>
           <th>הערות</th>
         </tr>
       </thead>
@@ -274,6 +343,7 @@ let showcustomersForm = $state(false);
           <tr class:orderdItem={item.quantity > 0}>
             <td>{item.name}</td>
             <td>{item.quantity}</td>
+            <td>{item.amount}</td>
             <td>{item.comment}</td>
           </tr>
         {/each}
@@ -285,7 +355,7 @@ let showcustomersForm = $state(false);
 
 <style>
   .form-container {
-    max-width: 800px;
+    max-width:1200px;
     margin: 0 auto;
     padding: 20px;
     background: #fff;
@@ -293,6 +363,32 @@ let showcustomersForm = $state(false);
     border-radius: 10px;
     font-family: Arial, sans-serif;
   }
+  input::placeholder, textarea::placeholder, select {
+  direction: rtl;
+}
+
+select {
+  width: 90%;
+  padding: 8px;
+  margin: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background: #fff;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23000' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 10px center;
+  background-size: 10px 6px;
+  padding-left: 30px;
+}
+
+select:focus {
+  border-color: #007BFF;
+  outline: none;
+  box-shadow: 0 0 5px rgba(0,123,255,0.5);
+}
 
   h1 {
     text-align: center;
@@ -360,7 +456,7 @@ tr.orderdItem {
 }
   
 .orderCheckout {
-    margin: 30px auto;
+    margin: 30px auto 100px auto;
     padding: 20px;
     background: #f9f9f9;
     border: 1px solid #ccc;
