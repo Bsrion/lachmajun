@@ -32,7 +32,7 @@ onMount(() => {
             <li in:fly={{ y: -50, duration: 500, delay: 200, easing:cubicOut}}><a href="/Neworder">פתיחת הזמנות</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 250, easing:cubicOut}}><a href="/contact">הזמנות שנקלטו</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 300, easing:cubicOut}}><a href="/customersIndex">אינדקס לקוחות</a></li>
-            <li in:fly={{ y: -50, duration: 500, delay: 350, easing:cubicOut}}><a href="/portfolio">לקוחות קיימים</a></li>
+            <li in:fly={{ y: -50, duration: 500, delay: 350, easing:cubicOut}}><a href="/allCustomers">לקוחות קיימים</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 400, easing:cubicOut}}><a href="/blog">Blog</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 450, easing:cubicOut}}><a href="/test">Test</a></li>
         </ul>
