@@ -58,10 +58,9 @@
 		}
 	}
 </script>
-
-<form on:submit|preventDefault={submitForm} class="form-container" aria-label="Customer Form">
 	<h2>טופס לקוח חדש</h2>
 
+<form onsubmit={submitForm} class="form-container" aria-label="Customer Form">
 	<label>
 		<span>שם פרטי *</span>
 		<input bind:value={formData.firstName} placeholder="הכנס שם פרטי" required autocomplete="given-name" />
@@ -122,7 +121,10 @@
 
 <style>
 	.form-container {
-		max-width: 420px;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		max-width: 800px;
+		gap: 5px 20px;
 		margin: 2rem auto;
 		padding: 2rem;
 		background: #f9f9f9;
@@ -166,7 +168,8 @@
 	}
 
 	button {
-		width: 100%;
+		width: 50%;
+		place-self: center;
 		background-color: #3498db;
 		color: white;
 		padding: 0.75rem 0;
@@ -207,5 +210,13 @@
 		background: #fcebea;
 		padding: 0.5rem;
 		border-radius: 5px;
+	}
+	@media screen and (max-width:550px){
+.form-container {
+		display: flex;
+		flex-direction: column;
+		max-width: 450px;
+		gap: 5px 20px;
+}
 	}
 </style>

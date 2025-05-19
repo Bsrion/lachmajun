@@ -1,9 +1,12 @@
 ---
   import Customers from '../components/customers.svelte';
 import Layout from '../layouts/Layout.astro';
+import Heder_hybid from '../components/heder_hybid.svelte';
+
 ---
 
 <Layout>
+			<Heder_hybid client:visible/>
 
   <Customers client:load/>
 

@@ -1,6 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro"
-import ReadOrder from "../components/read_order.svelte"
+import OrderForm from "../components/orderForm.svelte";
 import Heder_hybid from '../components/heder_hybid.svelte';
 
 
@@ -9,6 +9,6 @@ import Heder_hybid from '../components/heder_hybid.svelte';
 
 
 <Layout> 
-			<Heder_hybid client:visible/>
-    <ReadOrder client:load/>
+	<Heder_hybid client:visible/>
+    <OrderForm client:visible/>
 </Layout>   

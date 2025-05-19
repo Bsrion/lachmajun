@@ -1,7 +1,16 @@
 <script>
 
+    import { readonly } from 'svelte/store';
 import Customers from './customers.svelte';
-
+import {
+	blur,
+	crossfade,
+	draw,
+	fade,
+	fly,
+	scale,
+	slide
+} from 'svelte/transition';
   let customer = $state({
     firstName: '',
     lastName: '',
@@ -12,53 +21,25 @@ import Customers from './customers.svelte';
     comment: '',
     userName: '',
     userPassword: '',
-
+    dateOfSuplay:'',
+    houerOfSuplay:'',
+    deliveryPlace:'',
 
   });
+  let showInputs = $state(false);
 
   let orderItems = $state([
-    { category: 'סלטים', name: 'כוסברה', quantity: 0 , comment: ''},
-    { category: 'סלטים', name: 'שרי', quantity: 0 , comment: ''},
-    { category: 'סלטים', name: 'חסה', quantity: 0 , comment: ''},
-    { category: 'סלטים', name: 'טחינה', quantity: 0 , comment: ''},
-    { category: 'סלטים', name: 'מיקס מתבלים וחריפים', quantity: 0 , comment: ''},
-    { category: 'סלטים', name: 'מיקס חמוצים וזיתים', quantity: 0 , comment: ''},
-    { category: 'סלטים', name: '', quantity: 0 , comment: ''},
-    { category: 'סלטים', name: '', quantity: 0 , comment: ''},
-    { category: 'סלטים', name: 'רטבים לסלט', quantity: 0 , comment: ''},
-    { category: 'סלטים', name: '', quantity: 0 , comment: ''},
-    
-    { category: 'עיקריות', name: 'פרגיות', quantity: 0, comment: '' },
-    { category: 'עיקריות', name: 'קבב יווני', quantity: 0, comment: '' },
-    { category: 'עיקריות', name: 'נקניקיות עגל', quantity: 0, comment: '' },
-    { category: 'עיקריות', name: 'עראיס', quantity: 0, comment: '' },
-    { category: 'עיקריות', name: 'שניצלונים', quantity: 0, comment: '' },
-
-    { category: 'תוספות', name: 'פוטטו צ׳יפס', quantity: 0, comment: '' },
-
-    { category: 'מבחר ממולאים / ראשונות', name: 'עלי גפן', quantity: 0, comment: '' },
-    { category: 'מבחר ממולאים / ראשונות', name: 'כרוב', quantity: 0, comment: '' },
-    { category: 'מבחר ממולאים / ראשונות', name: 'נביליסיה', quantity: 0, comment: '' },
-    { category: 'מבחר ממולאים / ראשונות', name: 'סיגר סיסקא', quantity: 0, comment: '' },
-    { category: 'מבחר ממולאים / ראשונות', name: 'כרובית בציפוי', quantity: 0, comment: '' },
-    { category: 'מבחר ממולאים / ראשונות', name: 'ברוקולי בציפוי', quantity: 0, comment: '' },
-    { category: 'מבחר ממולאים / ראשונות', name: '', quantity: 0, comment: '' },
-    { category: 'מבחר ממולאים / ראשונות', name: 'פיתות', quantity: 0, comment: '' },
-
-    { category: 'חד פעמי', name: 'פיתות', quantity: 0, comment: '' },
-    { category: 'חד פעמי', name: 'פיתות', quantity: 0, comment: '' },
-    { category: 'חד פעמי', name: 'פיתות', quantity: 0, comment: '' },
-    { category: 'חד פעמי', name: 'פיתות', quantity: 0, comment: '' },
-    { category: 'חד פעמי', name: 'פיתות', quantity: 0, comment: '' },
-    { category: 'חד פעמי', name: 'פיתות', quantity: 0, comment: '' },
-    { category: 'חד פעמי', name: 'פיתות', quantity: 0, comment: '' },
-    { category: 'חד פעמי', name: 'פיתות', quantity: 0, comment: '' },
-
-    { category: 'לחמים', name: 'פיתות', quantity: 0, comment: '' },
-   
-    { category: 'שתייה', name:'קולה' ,quantity : 0 , comment:''},
-
-    { category: 'שונות', name: 'אלומיניום ולתיבול', quantity: 0 },
+    { category: 'סלטים', name: '', quantity: 0 , amount : 0,  comment: ''},
+    { category: 'רטבים לסלט', name: '', quantity: 0 , amount : 0, comment: ''},
+    { category: 'מבחר עיקריות', name: '', quantity: 0, amount : 0, comment: '' },
+    { category: 'מבחר תוספות', name: '', quantity: 0, amount : 0, comment: '' },
+    { category: 'מבחר ממולאים / ראשונות', name: '', quantity: 0, amount : 0, comment: '' },
+    { category: 'חד פעמי', name: '', quantity: 0, amount : 0, comment: '' },
+    { category: 'אלומיניום לתיבול', name: '', quantity: 0, amount : 0, comment: '' },
+    { category: 'לחמים', name: '', quantity: 0, amount : 0, comment: '' },
+    { category: 'שתייה', name:'' ,quantity : 0 , amount : 0, comment:''},
+    { category: 'שונות', name: '', quantity: 0, amount : 0, comment:'' },
+    { category: 'שונות', name: '', quantity: 0, amount : 0, comment:'' },
   ]);
 
   let toDoOrder = $derived.by(() => orderItems.filter(i => i.quantity > 0));
@@ -123,13 +104,13 @@ let showNewUserPrompt = $state(false);
 
 async function onNameInput() {
   const input = customer.name.trim();
-  if (input.length < 2) {
+  if (input.length < 1) {
     nameSuggestions = [];
     showNewUserPrompt = false;
     return;
   }
 
-  const res = await fetch(`https://dilen-digital.co.il/api/search_customers.php?q=${encodeURIComponent(input)}`);
+  const res = await fetch(`https://dilen-digital.co.il/api/customers_list.php?q=${encodeURIComponent(input)}`);
   if (res.ok) {
     const results = await res.json();
     nameSuggestions = results;
@@ -143,30 +124,93 @@ async function onNameInput() {
 let isNewCustomer = $state(false);
 
 function selectCustomer(cust) {
-  customer = { ...customer, ...cust };
+  showInputs = true;
+  customer = {
+    ...customer,
+    ...cust,
+    name: `${cust.firstName} ${cust.lastName} - ${cust.phone} - ${cust.address}` // optional, for display only
+  };
   nameSuggestions = [];
   showNewUserPrompt = false;
-  isNewCustomer = false; // הוספה חשובה
+  isNewCustomer = false;
 }
-function confirmNewCustomer() {
-  isNewCustomer = true;
-  showNewUserPrompt = false;
-}
+
 let showcustomersForm = $state(false);
 
 </script>
   <h1>הצעת מחיר / הזמנה</h1>
 
 <div class="form-container">
-    <div class='toggleCustomesIndex'>
-    <label>לקוח קיים</label>
-    <input type="checkbox" bind:checked={isNewCustomer} onchange={onNameInput} />
-    <label>לקוח חדש</label>
-    <button onclick={()=>showcustomersForm = !showcustomersForm}> לקוח חדש</button>
-    {#if showcustomersForm}
-<Customers client:load />
+  <div class="toggleCustomesIndex">
+  <label>חפש לקוח קיים</label>
+  
+  <!-- Name search input -->
+  <div class="name-input-container">
+  <div style="display: flex; position: relative;">
+    <input
+      type="text"
+      bind:value={customer.name}
+      oninput={onNameInput}
+      placeholder="שם הלקוח (פרטי או משפחה)"
+      disabled={showInputs}
+    />
+
+    {#if showInputs}
+      <button
+        onclick={() => {
+          if (confirm("אם תלחצו אישור, פרטי הלקוח ימחקו. התאריך, השעה וכתובת המשלוח יישארו כמו שהם.")) {
+            customer.name = '';
+            showInputs = false;
+          }
+        }}
+      >
+        clear
+      </button>
     {/if}
+  </div>
+
+
+    <!-- Suggestions dropdown -->
+    {#if nameSuggestions.length > 0}
+      <ul class="suggestion-list">
+        {#each nameSuggestions as suggestion}
+          <li onclick={() => selectCustomer(suggestion)}>
+            {suggestion.firstName} {suggestion.lastName} - {suggestion.phone} - {suggestion.address}
+          </li>
+        {/each}
+      </ul>
+    {/if}
+
+    {#if showInputs}
+    <div in:fly={{duration:500, y:200}}>
+    <input type="text"  bind:value={customer.firstName} placeholder="firstName"/>
+    <input type="text"  bind:value={customer.lastName} placeholder="lastName"/>
+    <input type="text"  bind:value={customer.phone} placeholder="phone"/>
+    <input type="text"  bind:value={customer.address} placeholder="phone"/>
+    <input type="text"  bind:value={customer.deliveryPlace} placeholder="כתובת המשלוח"/>
+    <input type="date"  bind:value={customer.dateOfSuplay} placeholder="dateOfSuplay"/>
+    <input type="time" bind:value={customer.houerOfSuplay} placeholder="houerOfSuplay"/>
+
     </div>
+    {/if}
+    <!-- New customer prompt -->
+    {#if showNewUserPrompt}
+      <div class="new-user-confirm">
+        לקוח לא נמצא. <button onclick={confirmNewCustomer}>הוסף כלקוח חדש</button>
+      </div>
+    {/if}
+  </div>
+
+  <!-- Toggle form for fully new customers -->
+  <button onclick={() => showcustomersForm = !showcustomersForm} style="margin-top:15px;">
+    לקוח חדש
+  </button>
+  {#if showcustomersForm}
+    <Customers client:load />
+  {/if}
+</div>
+
+
   {#each [...new Set(orderItems.map(i => i.category))] as category}
     <h2>{category}</h2>
     <table>
@@ -174,6 +218,7 @@ let showcustomersForm = $state(false);
         <tr>
           <th>פריט</th>
           <th>כמות</th>
+          <th>סה״כ</th>
           <th>הערות</th>
         </tr>
       </thead>
@@ -183,6 +228,9 @@ let showcustomersForm = $state(false);
                 <td>{item.name}</td>
             <td>
               <input type="number" min="0" bind:value={item.quantity} />
+            </td>
+            <td>
+              <input type="number" min="0" bind:value={item.amount} />
             </td>
             <td>
               <input type="text" bind:value={item.comment} placeholder="הערות" />
@@ -258,20 +306,13 @@ let showcustomersForm = $state(false);
   }
   tr{
     display: grid;
-    grid-template-columns: 1fr 1fr 2fr;
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 20px;
+    grid-template-columns: 1fr 0.5fr 0.5fr 2fr;
   }
 
   input, textarea {
     width: 90%;
     padding: 8px;
-    margin: 5px 0 15px;
+    margin: 5px;
     border: 1px solid #ccc;
     border-radius: 5px;
   }

@@ -1,0 +1,13 @@
+---
+import Customers_list from '../components/customers_list.svelte';
+import Layout from '../layouts/Layout.astro'; 
+import Heder_hybid from '../components/heder_hybid.svelte';
+
+---
+
+
+<Layout>    
+			<Heder_hybid client:visible/>
+<Customers_list client:load />
+
+</Layout>
