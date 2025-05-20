@@ -38,7 +38,8 @@ onMount(() => {
         </ul>
         {:else}
         <ul out:fly={{ y: 35, duration: 150,  }} in:fly={{ y: 35, duration: 300, delay: 400 }}>
-            <li><a href="/">SECOND</a></li>
+            <li><a href="/"><img src="/src/assets/burger-menu-right-svgrepo-com.svg" alt="Burger menu icon" style="width:30px; height:30px;">
+</a></li>
            
         </ul>
         {/if}

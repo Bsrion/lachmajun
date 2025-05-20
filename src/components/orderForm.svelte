@@ -2,15 +2,8 @@
 
     import { readonly } from 'svelte/store';
 import Customers from './customers.svelte';
-import {
-	blur,
-	crossfade,
-	draw,
-	fade,
-	fly,
-	scale,
-	slide
-} from 'svelte/transition';
+import { blur, crossfade, draw, fade, fly, scale, slide} from 'svelte/transition';
+
   let customer = $state({
     firstName: '',
     lastName: '',
@@ -24,8 +17,12 @@ import {
     dateOfSuplay:'',
     houerOfSuplay:'',
     deliveryPlace:'',
+    dateOfOrder:'',
 
   });
+  
+
+
   let showInputs = $state(false);
 const optionsByCategory = {
   'סלטים': ['חומוס', 'טחינה', 'סלט גזר', 'סלט כרוב', 'סלט ירקות קצוץ'],
@@ -104,6 +101,7 @@ function maybeAddNewRow(item) {
     const newCustomerData = await createRes.json();
     customer.id = newCustomerData.id; // אם ה-API מחזיר את ה-id של הלקוח
   }
+            
 
   // המשך בשליחת ההזמנה
   const response = await fetch("https://dilen-digital.co.il/api/submit_order.php", {
@@ -316,7 +314,7 @@ let showcustomersForm = $state(false);
         }}>
         {index} - נקה פריט
       </button>            </td>
-            <td>
+            <td style = "border:none;">
               <button onclick={()=>{
                   orderItems.push({ category: item.category, name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory[item.category] });
               }} >הוסף פריט</button>

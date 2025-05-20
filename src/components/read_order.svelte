@@ -1,11 +1,27 @@
 <script>
   import { onMount } from 'svelte';
 
-  let orders = [];
-  let error = null;
+  let orders = $state([]);
+  let error = $state(null);
+  let sortByDeliveryDate = $state(true); // default to delivery date
 
-  let sortField = 'order_num';
-  let sortDirection = 'asc';
+
+  // Date filters bound to inputs, but only applied on button click
+let todayStr = new Date().toISOString().split('T')[0]; // 'YYYY-MM-DD'
+let fromDateInput = $state(todayStr);
+let toDateInput = $state(todayStr);
+
+  // Actual dates used for filtering
+  let fromDate = $state(null);
+  let toDate = $state(null);
+
+  // Sorting
+  let sortField = $state('date_of_order');
+  let sortDirection = $state('desc'); // newest first by default
+
+  // Show all by default (no filter)
+  let filterMode = $state('all'); // 'all', 'today', 'nextDay', 'range'
+  let filterDate = $state(null); // for today/nextDay filter
 
   function parseOrderData(data) {
     try {
@@ -15,15 +31,19 @@
     }
   }
 
-  function sortOrders(orders) {
-    return [...orders].sort((a, b) => {
-      const aValue = extractSortValue(a, sortField);
-      const bValue = extractSortValue(b, sortField);
-
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
+  function formatDate(sqlDateString) {
+    if (!sqlDateString) return '';
+    const date = new Date(sqlDateString);
+    const options = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Jerusalem'
+    };
+    return new Intl.DateTimeFormat('he-IL', options).format(date);
   }
 
   function extractSortValue(order, field) {
@@ -37,9 +57,51 @@
         return customer.name?.toLowerCase() || '';
       case 'deliveryDate':
         return customer.deliveryDate || '';
+      case 'date_of_order':
+        return new Date(order.date_of_order);
       default:
         return '';
     }
+  }
+
+  function sortOrders(orders) {
+    return [...orders].sort((a, b) => {
+      const aValue = extractSortValue(a, sortField);
+      const bValue = extractSortValue(b, sortField);
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+function getOrderDate(order) {
+  const deliveryDate = order.parsed_data?.delivery_date;
+  const date = order.parsed_data?.date;
+  return new Date(deliveryDate || date || 0);
+}
+
+  function filterOrdersByDate(orders) {
+    return orders.filter(order => {
+      if (!order.date_of_order) return false;
+      const orderDate = new Date(order.date_of_order);
+
+      if (filterMode === 'all') {
+        return true; // no filter
+      } else if (filterMode === 'today' || filterMode === 'nextDay') {
+        // compare only date part ignoring time
+        const od = orderDate.setHours(0, 0, 0, 0);
+        const fd = filterDate.setHours(0, 0, 0, 0);
+        return od === fd;
+      } else if (filterMode === 'range') {
+        const from = fromDate ? new Date(fromDate) : null;
+        const to = toDate ? new Date(toDate) : null;
+        if (from) from.setHours(0, 0, 0, 0);
+        if (to) to.setHours(23, 59, 59, 999);
+        if (from && orderDate < from) return false;
+        if (to && orderDate > to) return false;
+        return true;
+      }
+      return true;
+    });
   }
 
   function setSort(field) {
@@ -48,6 +110,38 @@
     } else {
       sortField = field;
       sortDirection = 'asc';
+    }
+  }
+
+  function showToday() {
+    filterMode = 'today';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    filterDate = today;
+
+    // Clear date range inputs
+    fromDate = null;
+    toDate = null;
+  }
+
+  function showNextDay() {
+    filterMode = 'nextDay';
+    const nextDay = new Date();
+    nextDay.setDate(nextDay.getDate() + 1);
+    nextDay.setHours(0, 0, 0, 0);
+    filterDate = nextDay;
+
+    // Clear date range input
+    fromDate = null;
+    toDate = null;
+  }
+
+  function applyDateRange() {
+    if (fromDateInput && toDateInput) {
+      filterMode = 'range';
+      fromDate = fromDateInput;
+      toDate = toDateInput;
+      filterDate = null;
     }
   }
 
@@ -68,6 +162,112 @@
     }
   });
 </script>
+
+
+<div class="rtl-container">
+  {#if error}
+    <p style="color:red">שגיאה: {error}</p>
+  {:else}
+   <h2>רשימת הזמנות</h2>
+  
+<div class="filter-box">
+  <div class="filter-buttons">
+    
+    <button class="flat-button" on:click={showToday}>הצג הזמנות של היום</button>
+    <button class="flat-button" on:click={showNextDay}>הצג הזמנות של מחר</button>
+  </div>
+
+  <div class="date-range">
+    <p>Sorting by: {sortByDeliveryDate ? 'תאריך משלוח' : 'תאריך'}</p>
+
+    <label>
+      <span>מתאריך</span>
+      <input type="date" bind:value={fromDateInput} />
+    </label>
+    <label>
+      <span>עד תאריך</span>
+      <input type="date" bind:value={toDateInput} />
+    </label>
+    <button class="flat-button outlined" on:click={applyDateRange}>החל סינון תאריכים</button>
+  </div>
+</div>
+
+
+    <table>
+      <thead>
+        <tr>
+          <th on:click={() => setSort('date_of_order')}>
+            תאריך
+            {#if sortField === 'date_of_order'}
+              <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+            {/if}
+          </th>
+          <th on:click={() => setSort('order_num')}>
+            מספר הזמנה
+            {#if sortField === 'order_num'}
+              <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+            {/if}
+          </th>
+          <th on:click={() => setSort('phone')}>
+            טלפון
+            {#if sortField === 'phone'}
+              <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+            {/if}
+          </th>
+          <th on:click={() => setSort('name')}>
+            פרטי לקוח
+            {#if sortField === 'name'}
+              <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+            {/if}
+          </th>
+          <th>פרטי מוצרים</th>
+          <th on:click={() => setSort('deliveryDate')}>
+            תאריך משלוח
+            {#if sortField === 'deliveryDate'}
+              <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+            {/if}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+              {#each filterOrdersByDate(orders).slice().sort((a, b) => getOrderDate(a) - getOrderDate(b)) as order (order.order_num)}
+
+          <tr>
+            <td class="rtl">{formatDate(order.date_of_order)}</td>
+            <td class="rtl">{order.order_num}</td>
+            <td class="rtl">{order.parsed_data?.customer?.phone || '—'}</td>
+            <td>
+              {#if order.parsed_data?.customer}
+                <strong>{order.parsed_data.customer.name || '—'}</strong><br>
+                🏠 {order.parsed_data.customer.address || '—'}<br>
+                📝 {order.parsed_data.customer.comments || '—'}
+              {:else}
+                <em>אין נתוני לקוח</em>
+              {/if}
+            </td>
+            <td>
+              {#if order.parsed_data?.items}
+                <ul class="order-items">
+                  {#each order.parsed_data.items as item}
+                    <li>
+                      {item.name} (x{item.quantity}) — {item.category}
+                      {#if item.comment}
+                        <br><small><em>הערה: {item.comment}</em></small>
+                      {/if}
+                    </li>
+                  {/each}
+                </ul>
+              {:else}
+                <em>אין פריטים</em>
+              {/if}
+            </td>
+            <td class="rtl">{order.parsed_data?.customer?.dateOfSuplay || '—'} <br>{order.parsed_data?.customer?.houerOfSuplay || '—'} </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  {/if}
+</div>
 
 <style>
   .rtl-container {
@@ -115,77 +315,192 @@
     font-size: 0.8em;
     margin-right: 4px;
   }
-</style>
+  .filters {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
 
-<div class="rtl-container">
-  {#if error}
-    <p style="color:red">שגיאה: {error}</p>
-  {:else}
-    <h2>רשימת הזמנות</h2>
-    <table>
-      <thead>
-        <tr>
-          <th on:click={() => setSort('order_num')}>
-            מספר הזמנה
-            {#if sortField === 'order_num'}
-              <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-            {/if}
-          </th>
-          <th on:click={() => setSort('phone')}>
-            טלפון
-            {#if sortField === 'phone'}
-              <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-            {/if}
-          </th>
-          <th on:click={() => setSort('name')}>
-            פרטי לקוח
-            {#if sortField === 'name'}
-              <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-            {/if}
-          </th>
-          <th>פרטי מוצרים</th>
-          <th on:click={() => setSort('deliveryDate')}>
-            תאריך משלוח
-            {#if sortField === 'deliveryDate'}
-              <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-            {/if}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each sortOrders(orders) as order}
-          <tr>
-            <td class="ltr">{order.order_num}</td>
-            <td class="ltr">{order.parsed_data?.customer?.phone || '—'}</td>
-            <td>
-              {#if order.parsed_data?.customer}
-                <strong>{order.parsed_data.customer.name || '—'}</strong><br>
-                🏠 {order.parsed_data.customer.address || '—'}<br>
-                📝 {order.parsed_data.customer.comments || '—'}
-              {:else}
-                <em>אין נתוני לקוח</em>
-              {/if}
-            </td>
-            <td>
-              {#if order.parsed_data?.items}
-                <ul class="order-items">
-                  {#each order.parsed_data.items as item}
-                    <li>
-                      {item.name} (x{item.quantity}) — {item.category}
-                      {#if item.comment}
-                        <br><small><em>הערה: {item.comment}</em></small>
-                      {/if}
-                    </li>
-                  {/each}
-                </ul>
-              {:else}
-                <em>אין פריטים</em>
-              {/if}
-            </td>
-            <td class="ltr">{order.parsed_data?.customer?.deliveryDate || '—'}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  {/if}
-</div>
+.filter-buttons,
+.date-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.filter-btn,
+.apply-btn {
+  background-color: #0077cc;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.filter-btn:hover,
+.apply-btn:hover {
+  background-color: #005fa3;
+}
+
+.date-range label {
+  font-weight: bold;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.95rem;
+}
+
+.date-range input[type="date"] {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-top: 4px;
+  min-width: 160px;
+}
+.filter-panel {
+  background: #fefefe;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid #e5e5e5;
+}
+
+.filter-group,
+.date-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+}
+
+input[type="date"] {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 0.95rem;
+  background-color: #fff;
+  transition: border-color 0.2s ease;
+  min-width: 160px;
+}
+
+input[type="date"]:focus {
+  border-color: #0077cc;
+  outline: none;
+}
+
+.btn-primary {
+  background: linear-gradient(to right, #1e90ff, #0077cc);
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(to right, #0077cc, #005fa3);
+}
+
+.btn-secondary {
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ccc;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #e2e2e2;
+}
+.filter-box {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.filter-buttons,
+.date-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
+}
+
+input[type="date"] {
+  padding: 8px 12px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #f9f9f9;
+  min-width: 160px;
+  transition: border 0.2s ease;
+}
+
+input[type="date"]:focus {
+  border-color: #007bff;
+  outline: none;
+  background: #fff;
+}
+
+.flat-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.flat-button:hover {
+  background-color: #005fc0;
+}
+
+.flat-button.outlined {
+  background-color: transparent;
+  border: 1px solid #007bff;
+  color: #007bff;
+}
+
+.flat-button.outlined:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+
+</style>
