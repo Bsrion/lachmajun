@@ -15,9 +15,9 @@ import { blur, crossfade, draw, fade, fly, scale, slide} from 'svelte/transition
     userName: '',
     userPassword: '',
     dateOfSuplay:'',
-    houerOfSuplay:'',
-    deliveryPlace:'',
-    dateOfOrder:'',
+    houerOfSuplay:null,
+    deliveryPlace:null,
+    dateOfOrder:null,
 
   });
   
@@ -255,7 +255,7 @@ let showcustomersForm = $state(false);
       </thead>
       <tbody>
         {#each orderItems.filter(i => i.category === category) as item, index}
-          <tr class:orderdItem={item.quantity > 0}>
+          <tr class:orderdItem={item.quantity > 0} in:fly={{duration:350, y:-100}} out:fade={{duration:500}}>
                 <td><select bind:value={item.name}>
                     <option value="" disabled>בחר</option>
                     {#each optionsByCategory[item.category] ?? [] as opt}
@@ -312,13 +312,15 @@ let showcustomersForm = $state(false);
           orderItems.splice(globalIdx, 1);   // remove it
           orderItems = [...orderItems];      // force-reactivity
         }}>
-        {index} - נקה פריט
-      </button>            </td>
-            <td style = "border:none;">
+        {index}- נקה פריט
+      </button></td>
+      {#if orderItems.filter(i => i.category === category).length === index + 1}
+            <td style = "border:none">
               <button onclick={()=>{
                   orderItems.push({ category: item.category, name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory[item.category] });
               }} >הוסף פריט</button>
             </td>
+          {/if}
           </tr>
         {/each}
       </tbody>
@@ -331,11 +333,27 @@ let showcustomersForm = $state(false);
   <label>כמות אנשים:</label>
   <input type="number" placeholder="לדוגמה: 69" />
 
+  // not working --- not working
   <label>הערות:</label>
   <textarea bind:value={customer.comments}></textarea>
 
   <div class="buttons">
-    <button onclick={sendOrder}>שלח במייל</button>
+    {#if customer.dateOfSuplay && customer.houerOfSuplay && customer.deliveryPlace}
+    <button onclick={sendOrder}>שמור הזמנה </button>
+    {:else}
+    <button>:נא למלא את כל השדות 
+{#if !customer.dateOfSuplay}
+      <span style="color: yellow;">(תאריך אספקה)</span>
+    {/if}
+    {#if !customer.houerOfSuplay}
+      <span style="color: yellow;">(שעת אספקה)</span>
+    {/if}
+    {#if !customer.deliveryPlace}
+      <span style="color: yellow;">(כתובת אספקה)</span>
+    {/if}
+
+    </button>
+    {/if}
     <button onclick={printPage}>הדפס</button>
   </div>
 </div>
@@ -458,8 +476,10 @@ select:focus {
   }
 
   .buttons {
+    margin-top: 20px;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 20px;
   }
 
   button {
