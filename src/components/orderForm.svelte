@@ -49,7 +49,6 @@ let orderItems = $state([
   { category: 'אלומיניום לתיבול', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['אלומיניום לתיבול'] },
   { category: 'לחמים', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['לחמים'] },
   { category: 'שתייה', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['שתייה'] },
-  { category: 'שונות', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['שונות'] },
   { category: 'שונות', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['שונות'] }
 ]);
 
@@ -253,16 +252,17 @@ let showcustomersForm = $state(false);
           <th>כמות</th>
           <th>סה״כ</th>
           <th>הערות</th>
+          <th>נקה</th>
         </tr>
       </thead>
       <tbody>
-        {#each orderItems.filter(i => i.category === category) as item}
+        {#each orderItems.filter(i => i.category === category) as item, index}
           <tr class:orderdItem={item.quantity > 0}>
                 <td><select bind:value={item.name}>
-  <option value="" disabled>בחר</option>
-  {#each optionsByCategory[item.category] ?? [] as opt}
-    <option value={opt}>{opt}</option>
-  {/each}
+                    <option value="" disabled>בחר</option>
+                    {#each optionsByCategory[item.category] ?? [] as opt}
+                      <option value={opt}>{opt}</option>
+                    {/each}
 
   <!-- Show custom name if it's not already in the list -->
   {#if item.name && !optionsByCategory[item.category]?.includes(item.name)}
@@ -303,6 +303,24 @@ let showcustomersForm = $state(false);
             <td>
               <input type="text" bind:value={item.comment} placeholder="הערות" />
             </td>
+            <td>
+              <!-- <button onclick={(index) => {orderItems.splice(index, 1); }} >נקה פריט</button> -->
+<button
+        onclick={() => {
+          // find the real index of this item in the full array
+          const globalIdx = orderItems.findIndex(i => i === item);
+                    if(index === 0) return;
+
+          orderItems.splice(globalIdx, 1);   // remove it
+          orderItems = [...orderItems];      // force-reactivity
+        }}>
+        {index} - נקה פריט
+      </button>            </td>
+            <td>
+              <button onclick={()=>{
+                  orderItems.push({ category: item.category, name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory[item.category] });
+              }} >הוסף פריט</button>
+            </td>
           </tr>
         {/each}
       </tbody>
@@ -336,6 +354,7 @@ let showcustomersForm = $state(false);
           <th>כמות</th>
           <th>סה״כ</th>
           <th>הערות</th>
+          <th>נקה</th>
         </tr>
       </thead>
       <tbody>
@@ -402,10 +421,17 @@ select:focus {
   }
   tr{
     display: grid;
-    grid-template-columns: 1fr 0.5fr 0.5fr 2fr;
+    grid-template-columns: 1fr 0.5fr 0.5fr 2fr 0.3fr;
   }
 
-  input, textarea {
+  input[type='number'] {
+    width: 70%;
+    padding: 8px;
+    margin: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  input[type='text'], textarea {
     width: 90%;
     padding: 8px;
     margin: 5px;

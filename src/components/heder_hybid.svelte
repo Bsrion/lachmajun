@@ -54,13 +54,13 @@ li {
     list-style: none;
     display: inline-block;
     margin-right: clamp(1rem, 2vw, 2rem);
-    isolation: isolate;
+    /* isolation: isolate; */
 }
 li a {
     font-size: clamp(1rem, 1.5vw, 1.5rem);
     text-decoration: none;
     font-weight: 500;
-    color: rgb(205, 205, 205);
+    color: rgb(35, 35, 35);
     transition: color 0.3s ease, transform 0.3s ease;
 }
 li a:hover::after {
@@ -81,12 +81,14 @@ nav {
     top: 0;
     left: 0;
     right: 0;
-    padding: 35px;
-    height: 100px;
+    padding-top: 30px;
+    height: 30px;
     max-height: 100px;
-    mix-blend-mode: difference; /* 💥 this makes the whole nav blend */
+    /* mix-blend-mode: difference;  💥 this makes the whole nav blend */
     color: white;
     user-select: none;
+    background-color: white;
+    z-index: 1000;
 
 }
 ul{
