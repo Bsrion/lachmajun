@@ -112,6 +112,16 @@ function getOrderDate(order) {
       sortDirection = 'asc';
     }
   }
+  // ...existing code...
+
+function showAll() {
+  filterMode = 'all';
+  filterDate = null;
+  fromDate = null;
+  toDate = null;
+}
+
+// ...existing code...
 
   function showToday() {
     filterMode = 'today';
@@ -173,8 +183,9 @@ function getOrderDate(order) {
 <div class="filter-box">
   <div class="filter-buttons">
     
-    <button class="flat-button" on:click={showToday}>הצג הזמנות של היום</button>
-    <button class="flat-button" on:click={showNextDay}>הצג הזמנות של מחר</button>
+    <button class="flat-button" onclick={showAll}>הצג כל ההזמנות</button>
+    <button class="flat-button" onclick={showToday}>הצג הזמנות של היום</button>
+    <button class="flat-button" onclick={showNextDay}>הצג הזמנות של מחר</button>
   </div>
 
   <div class="date-range">
@@ -188,7 +199,7 @@ function getOrderDate(order) {
       <span>עד תאריך</span>
       <input type="date" bind:value={toDateInput} />
     </label>
-    <button class="flat-button outlined" on:click={applyDateRange}>החל סינון תאריכים</button>
+    <button class="flat-button outlined" onclick={applyDateRange}>החל סינון תאריכים</button>
   </div>
 </div>
 
@@ -196,32 +207,32 @@ function getOrderDate(order) {
     <table>
       <thead>
         <tr>
-          <th on:click={() => setSort('date_of_order')}>
+          <th onclick={() => setSort('date_of_order')}>
             תאריך
             {#if sortField === 'date_of_order'}
               <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             {/if}
           </th>
-          <th on:click={() => setSort('order_num')}>
+          <th onclick={() => setSort('order_num')}>
             מספר הזמנה
             {#if sortField === 'order_num'}
               <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             {/if}
           </th>
-          <th on:click={() => setSort('phone')}>
+          <th onclick={() => setSort('phone')}>
             טלפון
             {#if sortField === 'phone'}
               <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             {/if}
           </th>
-          <th on:click={() => setSort('name')}>
+          <th onclick={() => setSort('name')}>
             פרטי לקוח
             {#if sortField === 'name'}
               <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             {/if}
           </th>
           <th>פרטי מוצרים</th>
-          <th on:click={() => setSort('deliveryDate')}>
+          <th onclick={() => setSort('deliveryDate')}>
             תאריך משלוח
             {#if sortField === 'deliveryDate'}
               <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
@@ -238,9 +249,15 @@ function getOrderDate(order) {
             <td class="rtl">{order.parsed_data?.customer?.phone || '—'}</td>
             <td>
               {#if order.parsed_data?.customer}
-                <strong>{order.parsed_data.customer.name || '—'}</strong><br>
-                🏠 {order.parsed_data.customer.address || '—'}<br>
-                📝 {order.parsed_data.customer.comments || '—'}
+                                                <strong>שם:</strong>
+                <strong>{order.parsed_data.customer.firstName || '—'} 
+                {order.parsed_data.customer.lastName || '—'}</strong><br>
+                                                <strong>מייל:</strong>
+                {order.parsed_data.customer.email || '—'}<br>
+                                <strong>🏠:</strong>
+                 {order.parsed_data.customer.address || '—'}<br>
+                                                 <strong>📝 :</strong>
+                {order.parsed_data.customer.comments || '—'}
               {:else}
                 <em>אין נתוני לקוח</em>
               {/if}

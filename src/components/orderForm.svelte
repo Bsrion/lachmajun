@@ -218,25 +218,32 @@ let showcustomersForm = $state(false);
     <input type="text"  bind:value={customer.phone} placeholder="phone"/>
     <input type="text"  bind:value={customer.address} placeholder="phone"/>
     <input type="text"  bind:value={customer.deliveryPlace} placeholder="כתובת המשלוח"/>
-    <input type="date"  bind:value={customer.dateOfSuplay} placeholder="dateOfSuplay"/>
-    <input type="time" bind:value={customer.houerOfSuplay} placeholder="houerOfSuplay"/>
+    <input type="date"  bind:value={customer.dateOfSuplay} placeholder="תאריך אספקה"/>
+    <input type="time" bind:value={customer.houerOfSuplay} placeholder="שעת אספקה"/>
 
     </div>
     {/if}
     <!-- New customer prompt -->
     {#if showNewUserPrompt}
       <div class="new-user-confirm">
-        לקוח לא נמצא. <button onclick={confirmNewCustomer}>הוסף כלקוח חדש</button>
+        לקוח לא נמצא.
+        <button onclick={confirmNewCustomer}>הוסף כלקוח חדש</button>
       </div>
     {/if}
   </div>
 
   <!-- Toggle form for fully new customers -->
   <button onclick={() => showcustomersForm = !showcustomersForm} style="margin-top:15px;">
+  {#if !showcustomersForm}
     לקוח חדש
+    {:else}
+    סגור חלון
+  {/if}
   </button>
   {#if showcustomersForm}
+  <div in:scale={{duration:1000}} out:scale={{duration:1000}}>
     <Customers client:load />
+  </div>
   {/if}
 </div>
 
@@ -447,7 +454,7 @@ select:focus {
     border: 1px solid #ccc;
     border-radius: 5px;
   }
-  input[type='text'], textarea {
+  input[type='text'], input[type='date'], input[type='time'], textarea {
     width: 90%;
     padding: 8px;
     margin: 5px;
