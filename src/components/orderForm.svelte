@@ -22,7 +22,6 @@ import { blur, crossfade, draw, fade, fly, scale, slide} from 'svelte/transition
   });
   
 
-
   let showInputs = $state(false);
 const optionsByCategory = {
   'סלטים': ['חומוס', 'טחינה', 'סלט גזר', 'סלט כרוב', 'סלט ירקות קצוץ'],
@@ -78,7 +77,11 @@ function maybeAddNewRow(item) {
   }
 
  async function sendOrder() {
-  if (!customer.name || !customer.phone || !customer.email || !customer.address) {
+  if (!customer.firstName || !customer.lastName || !customer.phone || !customer.address) {
+  alert("יש למלא את כל שדות החובה");
+  return;
+}
+ {
     alert("יש למלא את כל שדות החובה");
     return;
   }
@@ -158,7 +161,7 @@ function selectCustomer(cust) {
   customer = {
     ...customer,
     ...cust,
-    name: `${cust.firstName} ${cust.lastName} - ${cust.phone} - ${cust.address}` // optional, for display only
+    name: `${cust.firstName} ${cust.lastName} - ${cust.phone} - ${cust.address}` // optional, for display onlyß
   };
   nameSuggestions = [];
   showNewUserPrompt = false;
@@ -187,6 +190,7 @@ let showcustomersForm = $state(false);
 
     {#if showInputs}
       <button
+        style=" position: absolute; left: 110px; height: 50%; top:50%; transform: translateY(-50%); padding: 0px 10px;"
         onclick={() => {
           if (confirm("אם תלחצו אישור, פרטי הלקוח ימחקו. התאריך, השעה וכתובת המשלוח יישארו כמו שהם.")) {
             customer.name = '';
@@ -262,7 +266,7 @@ let showcustomersForm = $state(false);
       </thead>
       <tbody>
         {#each orderItems.filter(i => i.category === category) as item, index}
-          <tr class:orderdItem={item.quantity > 0} in:fly={{duration:350, y:-100}} out:fade={{duration:500}}>
+          <tr class:orderdItem={item.quantity > 0} in:fly={{duration:350, y:-100}} out:slide={{duration:300}}>
                 <td><select bind:value={item.name}>
                     <option value="" disabled>בחר</option>
                     {#each optionsByCategory[item.category] ?? [] as opt}
@@ -340,7 +344,8 @@ let showcustomersForm = $state(false);
   <label>כמות אנשים:</label>
   <input type="number" placeholder="לדוגמה: 69" />
 
-  // not working --- not working
+<!-- not working --- not working -->
+
   <label>הערות:</label>
   <textarea bind:value={customer.comments}></textarea>
 
@@ -559,6 +564,7 @@ tr.orderdItem {
   }
   .name-input-container {
   position: relative;
+  width: 100%;
 }
 
 </style>
