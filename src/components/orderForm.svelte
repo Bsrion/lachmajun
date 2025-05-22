@@ -228,10 +228,10 @@ let showcustomersForm = $state(false);
     </div>
     {/if}
     <!-- New customer prompt -->
-    {#if showNewUserPrompt}
+    {#if showNewUserPrompt && !showInputs}
       <div class="new-user-confirm">
         לקוח לא נמצא.
-        <button onclick={confirmNewCustomer}>הוסף כלקוח חדש</button>
+        <button onclick={()=>{showcustomersForm = true; showNewUserPrompt = !showNewUserPrompt}}>הוסף כלקוח חדש</button>
       </div>
     {/if}
   </div>
@@ -353,7 +353,7 @@ let showcustomersForm = $state(false);
     {#if customer.dateOfSuplay && customer.houerOfSuplay && customer.deliveryPlace}
     <button onclick={sendOrder}>שמור הזמנה </button>
     {:else}
-    <button>:נא למלא את כל השדות 
+    <button>נא למלא את כל השדות: 
 {#if !customer.dateOfSuplay}
       <span style="color: yellow;">(תאריך אספקה)</span>
     {/if}

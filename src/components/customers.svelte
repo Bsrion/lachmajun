@@ -1,6 +1,6 @@
 <script>
 	let formData = $state({
-		firstName: '',
+		firstName:'',
 		lastName: '',
 		phone: '',
 		phone2: '',
