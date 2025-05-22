@@ -18,9 +18,22 @@ import { blur, crossfade, draw, fade, fly, scale, slide} from 'svelte/transition
     houerOfSuplay:null,
     deliveryPlace:null,
     dateOfOrder:null,
+    hotOrCold: '',
+    comments: '',
+    orderNum: null,
+    orderStatus: 'open',
+    orderDate: null,
+    orderTime: null,
+    orderType: null,
+    numOfSets: null,
+    orderBasePrice: 79,
+    orderDeliveryPrice: 0,
+    // orderTotalPrice: 0,
+    orderItems: [],
 
   });
-  
+  let orderPrice = $derived(customer.orderBasePrice * customer.numOfSets);
+  let orderTotalPrice = $derived(orderPrice + customer.orderDeliveryPrice);
 
   let showInputs = $state(false);
 const optionsByCategory = {
@@ -36,16 +49,16 @@ const optionsByCategory = {
   'שונות': ['מגבונים', 'ניילון נצמד', 'נייר כסף']
 };
 let orderItems = $state([
-  { category: 'סלטים', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['סלטים'] },
-  { category: 'רטבים לסלט', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['רטבים לסלט'] },
-  { category: 'מבחר עיקריות', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['מבחר עיקריות'] },
-  { category: 'מבחר תוספות', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['מבחר תוספות'] },
-  { category: 'מבחר ממולאים / ראשונות', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['מבחר ממולאים / ראשונות'] },
-  { category: 'חד פעמי', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['חדפעמי'] },
-  { category: 'אלומיניום לתיבול', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['אלומיניום לתיבול'] },
-  { category: 'לחמים', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['לחמים'] },
-  { category: 'שתייה', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['שתייה'] },
-  { category: 'שונות', name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory['שונות'] }
+  { category: 'סלטים', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['סלטים'] },
+  { category: 'רטבים לסלט', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['רטבים לסלט'] },
+  { category: 'מבחר עיקריות', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['מבחר עיקריות'] },
+  { category: 'מבחר תוספות', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['מבחר תוספות'] },
+  { category: 'מבחר ממולאים / ראשונות', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['מבחר ממולאים / ראשונות'] },
+  { category: 'חד פעמי', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['חדפעמי'] },
+  { category: 'אלומיניום לתיבול', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['אלומיניום לתיבול'] },
+  { category: 'לחמים', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['לחמים'] },
+  { category: 'שתייה', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['שתייה'] },
+  { category: 'שונות', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['שונות'] }
 ]);
 
 function maybeAddNewRow(item) {
@@ -307,7 +320,7 @@ let showcustomersForm = $state(false);
               <input type="number" min="0" bind:value={item.quantity} />
             </td>
             <td>
-              <input type="number" min="0" bind:value={item.amount} />
+              <input type="number" min="" bind:value={item.amount} />
             </td>
             <td>
               <input type="text" bind:value={item.comment} placeholder="הערות" />
@@ -318,17 +331,21 @@ let showcustomersForm = $state(false);
         onclick={() => {
           // find the real index of this item in the full array
           const globalIdx = orderItems.findIndex(i => i === item);
-                    if(index === 0) return;
-
-          orderItems.splice(globalIdx, 1);   // remove it
-          orderItems = [...orderItems];      // force-reactivity
+          if(index === 0) {
+            orderItems[globalIdx].name = '';
+            orderItems[globalIdx].quantity = null;
+            orderItems[globalIdx].amount = null;
+          } else if(index > 0) {
+            orderItems.splice(globalIdx, 1);   // remove it
+            orderItems = [...orderItems];      // force-reactivity
+          }
         }}>
         {index}- נקה פריט
       </button></td>
       {#if orderItems.filter(i => i.category === category).length === index + 1}
             <td style = "border:none">
               <button onclick={()=>{
-                  orderItems.push({ category: item.category, name: '', quantity: 0, amount: 0, comment: '', options: optionsByCategory[item.category] });
+                  orderItems.push({ category: item.category, name: '', quantity: null, amount: null, comment: '', options: optionsByCategory[item.category] });
               }} >הוסף פריט</button>
             </td>
           {/if}
@@ -338,17 +355,30 @@ let showcustomersForm = $state(false);
     </table>
   {/each}
 
+<div class="sumAcount">
   <label>אוכל חם / קר</label>
-  <input bind:value={customer.hotOrCold} placeholder="לדוגמה: חם" />
+  <input type={customer.hotOrCold} placeholder="לדוגמה: חם" />
 
   <label>כמות אנשים:</label>
-  <input type="number" placeholder="לדוגמה: 69" />
+  <input type="number" bind:value={customer.numOfSets} placeholder="כמות מנות:" />
+    <label>מחיר למנה :</label>
+  <input type="number" bind:value={customer.orderBasePrice}  placeholder="מחיר למנה" />
+    <label>סה״כ לתשלום :</label>
+
+  <input type="number" bind:value={orderPrice} placeholder="סה״כ לתשלום" />
+    <label>עלות משלוח :</label>
+
+  <input type="number" bind:value={customer.orderDeliveryPrice} placeholder="עלות משלוח" />
+    <label>סה״כ כולל משלוח :</label>
+
+  <input type="number" bind:value={orderTotalPrice} placeholder="סה״כ כולל משלוח" />
+
 
 <!-- not working --- not working -->
 
   <label>הערות:</label>
   <textarea bind:value={customer.comments}></textarea>
-
+</div>
   <div class="buttons">
     {#if customer.dateOfSuplay && customer.houerOfSuplay && customer.deliveryPlace}
     <button onclick={sendOrder}>שמור הזמנה </button>
@@ -550,6 +580,10 @@ tr.orderdItem {
   padding: 10px;
   border: 1px solid #ffbfbf;
   border-radius: 5px;
+}
+.sumAcount{
+  display: grid;
+  grid-template-columns: 1fr 5fr;
 }
 
   @media print {
