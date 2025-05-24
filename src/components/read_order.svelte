@@ -47,22 +47,25 @@ let toDateInput = $state(todayStr);
   }
 
   function extractSortValue(order, field) {
-    const customer = order.parsed_data?.customer || {};
-    switch (field) {
-      case 'order_num':
-        return Number(order.order_num);
-      case 'phone':
-        return customer.phone || '';
-      case 'name':
-        return customer.name?.toLowerCase() || '';
-      case 'deliveryDate':
-        return customer.deliveryDate || '';
-      case 'date_of_order':
-        return new Date(order.date_of_order);
-      default:
-        return '';
-    }
+  const customer = order.parsed_data?.customer || {};
+  switch (field) {
+    case 'id':
+      return Number(customer.id || 0); // add this line
+    case 'order_num':
+      return Number(order.order_num);
+    case 'phone':
+      return customer.phone || '';
+    case 'name':
+      return customer.name?.toLowerCase() || '';
+    case 'deliveryDate':
+      return customer.dateOfSuplay || '';
+    case 'date_of_order':
+      return new Date(order.date_of_order);
+    default:
+      return '';
   }
+}
+
 
   function sortOrders(orders) {
     return [...orders].sort((a, b) => {
@@ -189,7 +192,7 @@ function showAll() {
   </div>
 
   <div class="date-range">
-    <p>Sorting by: {sortByDeliveryDate ? 'תאריך משלוח' : 'תאריך'}</p>
+<p>מיון לפי: {sortField === 'deliveryDate' ? 'תאריך משלוח' : 'תאריך הזמנה / אחר'}</p>
 
     <label>
       <span>מתאריך</span>
@@ -203,6 +206,24 @@ function showAll() {
   </div>
 </div>
 
+<div class="sort-controls">
+  <select bind:value={sortField}>
+    <option value="customer_name">שם לקוח</option>
+    <option value="status">סטטוס</option>
+    <!-- Add more sort options as needed -->
+  </select>
+
+  <button onclick={() => sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'}>
+    החלף כיוון מיון
+  </button>
+
+  <button class="reset-sort-button" onclick={() => {
+    sortField = 'date_of_order';
+    sortDirection = 'desc';
+  }}>
+    אפס מיון
+  </button>
+</div>
 
     <table>
       <thead>
@@ -219,9 +240,9 @@ function showAll() {
               <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             {/if}
           </th>
-          <th onclick={() => setSort('phone')}>
-            טלפון
-            {#if sortField === 'phone'}
+          <th onclick={() => setSort('id')}>
+            מספר לקוח
+            {#if sortField === 'id'}
               <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             {/if}
           </th>
@@ -233,7 +254,7 @@ function showAll() {
           </th>
           <th>פרטי מוצרים</th>
           <th onclick={() => setSort('deliveryDate')}>
-            תאריך משלוח
+            תאריך ושעת משלוח
             {#if sortField === 'deliveryDate'}
               <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             {/if}
@@ -241,17 +262,19 @@ function showAll() {
         </tr>
       </thead>
       <tbody>
-              {#each filterOrdersByDate(orders).slice().sort((a, b) => getOrderDate(a) - getOrderDate(b)) as order (order.order_num)}
+{#each sortOrders(filterOrdersByDate(orders)) as order (order.order_num)}
 
           <tr>
             <td class="rtl">{formatDate(order.date_of_order)}</td>
             <td class="rtl">{order.order_num}</td>
-            <td class="rtl">{order.parsed_data?.customer?.phone || '—'}</td>
+            <td class="rtl">{order.parsed_data?.customer?.id || '—'}</td>
             <td>
               {#if order.parsed_data?.customer}
                                                 <strong>שם:</strong>
                 <strong>{order.parsed_data.customer.firstName || '—'} 
                 {order.parsed_data.customer.lastName || '—'}</strong><br>
+                <strong>טלפון :</strong>
+                <strong>{order.parsed_data.customer.phone || '—'} </strong><br>
                                                 <strong>מייל:</strong>
                 {order.parsed_data.customer.email || '—'}<br>
                                 <strong>🏠:</strong>
@@ -278,7 +301,9 @@ function showAll() {
                 <em>אין פריטים</em>
               {/if}
             </td>
-            <td class="rtl">{order.parsed_data?.customer?.dateOfSuplay || '—'} <br>{order.parsed_data?.customer?.houerOfSuplay || '—'} </td>
+            <td class="rtl">{order.parsed_data?.customer?.dateOfSuplay || '—'} <br>
+                            {order.parsed_data?.customer?.houerOfSuplay || '—'} <br>
+                            {order.parsed_data?.customer?.orderDay || '—'} </td>
           </tr>
         {/each}
       </tbody>
@@ -287,6 +312,7 @@ function showAll() {
 </div>
 
 <style>
+
   .rtl-container {
     direction: rtl;
     font-family: Arial, sans-serif;
@@ -413,7 +439,7 @@ input[type="date"] {
   font-size: 0.95rem;
   background-color: #fff;
   transition: border-color 0.2s ease;
-  min-width: 160px;
+  min-width: 100px;
 }
 
 input[type="date"]:focus {
@@ -518,6 +544,30 @@ input[type="date"]:focus {
   background-color: #007bff;
   color: white;
 }
+.sort-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1rem;
+  align-items: center;
+}
 
+.sort-controls select,
+.sort-controls button {
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.reset-sort-button {
+  background-color: #e0e0e0;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  color: #333;
+  transition: background-color 0.2s ease;
+}
+
+.reset-sort-button:hover {
+  background-color: #ccc;
+}
 
 </style>

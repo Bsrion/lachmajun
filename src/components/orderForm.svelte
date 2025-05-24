@@ -1,8 +1,8 @@
 <script>
 
-    import { readonly } from 'svelte/store';
 import Customers from './customers.svelte';
 import { blur, crossfade, draw, fade, fly, scale, slide} from 'svelte/transition';
+import AddressSearch from '../components/AddressAutocomplete.svelte';
 
   let customer = $state({
     firstName: '',
@@ -16,27 +16,32 @@ import { blur, crossfade, draw, fade, fly, scale, slide} from 'svelte/transition
     userPassword: '',
     dateOfSuplay:'',
     houerOfSuplay:null,
-    deliveryPlace:null,
+    deliveryCity:'ירושלים',
+    deliveryPlace:'',
     dateOfOrder:null,
     hotOrCold: '',
     comments: '',
     orderNum: null,
     orderStatus: 'open',
+    orderDay: '',
     orderDate: null,
     orderTime: null,
     orderType: null,
     numOfSets: null,
     orderBasePrice: 79,
-    orderDeliveryPrice: 0,
+    orderDeliveryPrice: null,
     // orderTotalPrice: 0,
     orderItems: [],
 
   });
+
   let orderPrice = $derived(customer.orderBasePrice * customer.numOfSets);
   let orderTotalPrice = $derived(orderPrice + customer.orderDeliveryPrice);
+  let orderDelveryFullAdd = $derived(customer.deliveryPlace + ', ' + customer.deliveryCity);
+  let showDeliveryInputs = $state(false);
 
   let showInputs = $state(false);
-const optionsByCategory = {
+  const optionsByCategory = {
   'סלטים': ['חומוס', 'טחינה', 'סלט גזר', 'סלט כרוב', 'סלט ירקות קצוץ'],
   'רטבים לסלט': ['וינגרט', 'רוטב שום לימון', 'בלסמי', 'צ׳ילי מתוק'],
   'מבחר עיקריות': ['שניצל', 'פרגיות בתנור', 'קציצות ברוטב עגבניות', 'חזה עוף', 'מוסקה'],
@@ -60,6 +65,7 @@ let orderItems = $state([
   { category: 'שתייה', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['שתייה'] },
   { category: 'שונות', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['שונות'] }
 ]);
+
 
 function maybeAddNewRow(item) {
   // Check if this item is the last in its category
@@ -94,12 +100,8 @@ function maybeAddNewRow(item) {
   alert("יש למלא את כל שדות החובה");
   return;
 }
- {
-    alert("יש למלא את כל שדות החובה");
-    return;
-  }
-
-  // אם זה לקוח חדש – צור אותו קודם
+ 
+   // אם זה לקוח חדש – צור אותו קודם
   if (isNewCustomer) {
     const createRes = await fetch('https://dilen-digital.co.il/api/add_customer.php', {
       method: 'POST',
@@ -126,7 +128,7 @@ function maybeAddNewRow(item) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      user_id: 1,
+      user_id: customer.id,
       order_data: {
         customer,
         items: orderItems.filter(i => i.quantity > 0)
@@ -136,27 +138,77 @@ function maybeAddNewRow(item) {
 
   const data = await response.json();
   if (data.success) {
-    alert(`הזמנה נשלחה! מספר הזמנה: ${data.order_num}`);
-  } else {
-    alert('שגיאה בשליחת הזמנה');
-    console.error(data);
-  }
+     alert(`הזמנה נשלחה! מספר הזמנה: ${data.order_num}`);
+  
+  // איפוס פרטי הלקוח
+  customer = [...startPointCustomer];
+
+
+  // איפוס פרטי ההזמנה
+  orderItems = orderItems.map(item => ({
+    ...item,
+    quantity: 0
+  }));
+
+  // אם אתה משתמש ב-state (למשל Svelte עם Runes או reactive vars), תצטרך גם להפעיל update
+
+} else {
+  alert('שגיאה בשליחת הזמנה');
+  console.error(data);
+}
 }
 
 
 let nameSuggestions = $state([]);
 let showNewUserPrompt = $state(false);
+let selectedIndex = $state(-1);
+let suggestionRefs = $state([]);
+ let warning = $state('');
+const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
+function validateDate() {
+    if (!customer.dateOfSuplay) {
+      warning = '';
+      customer.orderDay = '';
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const selectedDate = new Date(customer.dateOfSuplay);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      warning = 'התאריך לא יכול להיות בעבר!';
+    } else {
+      warning = '';
+    }
+
+      customer.orderDay = hebrewDays[selectedDate.getDay()];
+  }
 
 async function onNameInput() {
   const input = customer.name.trim();
+  selectedIndex = -1;
+
   if (input.length < 1) {
     nameSuggestions = [];
     showNewUserPrompt = false;
     return;
   }
 
-  const res = await fetch(`https://dilen-digital.co.il/api/customers_list.php?q=${encodeURIComponent(input)}`);
+  const url = `https://dilen-digital.co.il/api/customers_list.php`;
+  const params = new URLSearchParams();
+
+  if (/^\d+$/.test(input)) {
+    params.append('id', input);
+  } else {
+    params.append('q', input);
+  }
+
+  const res = await fetch(`${url}?${params.toString()}`);
+
   if (res.ok) {
     const results = await res.json();
     nameSuggestions = results;
@@ -164,6 +216,35 @@ async function onNameInput() {
   } else {
     nameSuggestions = [];
     showNewUserPrompt = false;
+  }
+}
+
+function handleKeydown(event) {
+  if (nameSuggestions.length === 0) return;
+
+  if (event.key === 'ArrowDown') {
+    selectedIndex = (selectedIndex + 1) % nameSuggestions.length;
+    scrollSelectedIntoView();
+    event.preventDefault();
+  } else if (event.key === 'ArrowUp') {
+    selectedIndex = (selectedIndex - 1 + nameSuggestions.length) % nameSuggestions.length;
+    scrollSelectedIntoView();
+    event.preventDefault();
+  } else if (event.key === 'Enter' && selectedIndex >= 0) {
+    selectCustomer(nameSuggestions[selectedIndex]);
+    nameSuggestions = [];
+    selectedIndex = -1;
+  }else if (event.key === 'Escape') {
+  nameSuggestions = [];
+  selectedIndex = -1;
+}
+
+}
+
+function scrollSelectedIntoView() {
+  const el = suggestionRefs[selectedIndex];
+  if (el && typeof el.scrollIntoView === 'function') {
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 }
 
@@ -183,6 +264,13 @@ function selectCustomer(cust) {
 
 let showcustomersForm = $state(false);
 
+// convert date to dd/mm/yyyy
+  function formatToDDMMYYYY(isoDate) {
+    if (!isoDate) return '';
+    const [year, month, day] = isoDate.split('-');
+    return `${day}-${month}-${year}`;
+  }
+
 </script>
   <h1>הצעת מחיר / הזמנה</h1>
 
@@ -194,12 +282,13 @@ let showcustomersForm = $state(false);
   <div class="name-input-container">
   <div style="display: flex; position: relative;">
     <input
-      type="text"
-      bind:value={customer.name}
-      oninput={onNameInput}
-      placeholder="שם הלקוח (פרטי או משפחה)"
-      disabled={showInputs}
-    />
+  type="text"
+  bind:value={customer.name}
+  oninput={onNameInput}
+  onkeydown={handleKeydown}
+  placeholder="שם הלקוח (פרטי או משפחה)"
+  disabled={showInputs}
+/>
 
     {#if showInputs}
       <button
@@ -218,28 +307,24 @@ let showcustomersForm = $state(false);
 
 
     <!-- Suggestions dropdown -->
-    {#if nameSuggestions.length > 0}
-      <ul class="suggestion-list">
-        {#each nameSuggestions as suggestion}
-          <li onclick={() => selectCustomer(suggestion)}>
-            {suggestion.firstName} {suggestion.lastName} - {suggestion.phone} - {suggestion.address}
-          </li>
-        {/each}
-      </ul>
-    {/if}
+{#if nameSuggestions.length > 0}
+  <ul class="suggestion-list">
+    {#each nameSuggestions as suggestion, index}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <li
+    bind:this={suggestionRefs[index]}
+    class:selected={index === selectedIndex}
+    onclick={() => selectCustomer(suggestion)}
+  >
+    {suggestion.firstName || ''} {suggestion.lastName || ''} -
+    {suggestion.phone || 'ללא טלפון'} -
+    {suggestion.address || 'ללא כתובת'} -
+    מס׳ לקוח {suggestion.id != null ? suggestion.id : '---'}
+  </li>
+{/each}
+  </ul>
+{/if}
 
-    {#if showInputs}
-    <div in:fly={{duration:500, y:200}}>
-    <input type="text"  bind:value={customer.firstName} placeholder="firstName"/>
-    <input type="text"  bind:value={customer.lastName} placeholder="lastName"/>
-    <input type="text"  bind:value={customer.phone} placeholder="phone"/>
-    <input type="text"  bind:value={customer.address} placeholder="phone"/>
-    <input type="text"  bind:value={customer.deliveryPlace} placeholder="כתובת המשלוח"/>
-    <input type="date"  bind:value={customer.dateOfSuplay} placeholder="תאריך אספקה"/>
-    <input type="time" bind:value={customer.houerOfSuplay} placeholder="שעת אספקה"/>
-
-    </div>
-    {/if}
     <!-- New customer prompt -->
     {#if showNewUserPrompt && !showInputs}
       <div class="new-user-confirm">
@@ -247,10 +332,9 @@ let showcustomersForm = $state(false);
         <button onclick={()=>{showcustomersForm = true; showNewUserPrompt = !showNewUserPrompt}}>הוסף כלקוח חדש</button>
       </div>
     {/if}
-  </div>
 
   <!-- Toggle form for fully new customers -->
-  <button onclick={() => showcustomersForm = !showcustomersForm} style="margin-top:15px;">
+  <button onclick={() => showcustomersForm = !showcustomersForm} style="margin:10px 0;">
   {#if !showcustomersForm}
     לקוח חדש
     {:else}
@@ -262,6 +346,81 @@ let showcustomersForm = $state(false);
     <Customers client:load />
   </div>
   {/if}
+    <div>
+    {#if showInputs}
+    <div in:fly={{duration:500, y:200}} out:fly={{duration:500, y:-200}}>
+    <input type="text"  bind:value={customer.id} placeholder="customer id" readonly/>
+    <input type="text"  bind:value={customer.firstName} placeholder="firstName"/>
+    <input type="text"  bind:value={customer.lastName} placeholder="lastName"/>
+    <input type="text"  bind:value={customer.phone} placeholder="phone"/>
+    <input type="text"  bind:value={customer.address} placeholder="phone"/>
+    </div>
+    {/if}
+     <input
+  type="text"
+  bind:value={orderDelveryFullAdd}
+  onclick={() => showDeliveryInputs = !showDeliveryInputs}
+  placeholder="כתובת המשלוח"
+  id="missingDetails"
+  autocomplete="off"
+  readonly
+  style="cursor:pointer"
+/>
+
+{#if showDeliveryInputs}
+  <div
+    style="position: relative;"
+    in:fly={{ duration: 500, x: -500 }}
+    out:fly={{ duration: 500, x: 500 }}
+    onintroend={() => {
+      const input = document.querySelector('#street-input');
+      input?.focus();
+    }}
+  >
+    <button
+      onclick={() => showDeliveryInputs = false}
+      style="position: absolute; right:5px; top:0px;"
+    >
+      close
+    </button>
+
+    <AddressSearch
+      city={customer.deliveryCity}
+      on:citySelect={(e) => customer.deliveryCity = e.detail}
+      street={customer.deliveryPlace}
+      on:streetSelect={(e) => {
+        customer.deliveryPlace = e.detail;
+        showDeliveryInputs = false;
+      }}
+    />
+  </div>
+{/if}
+
+  <div><div>
+   <input
+  type="date"
+  bind:value={customer.dateOfSuplay}
+  placeholder="תאריך אספקה"
+  id="lachmajun-dateOfSuplay"
+  class="lachmajun-input"
+  class:invalid={warning}
+  oninput={validateDate}
+/>
+
+  {#if customer.orderDay && !warning}
+    <span class="lachmajun-hebrew-day">יום {customer.orderDay}</span>
+  {/if}
+    </div>
+  {#if warning}
+    <div class="lachmajun-warning">{warning}</div>
+  {/if}
+  <input
+    type="time" 
+    bind:value={customer.houerOfSuplay} placeholder="שעת אספקה"
+    id="lachmajun-houerOfSuplay" class="lachmajun-input"
+  /></div>
+        </div>
+  </div>
 </div>
 
 
@@ -339,8 +498,8 @@ let showcustomersForm = $state(false);
             orderItems.splice(globalIdx, 1);   // remove it
             orderItems = [...orderItems];      // force-reactivity
           }
-        }}>
-        {index}- נקה פריט
+        }} style="width: 100%; padding: 5px; background-color: #ffcccc; color: #b30000; border: none; border-radius: 5px;">
+        {index + 1} - נקה פריט
       </button></td>
       {#if orderItems.filter(i => i.category === category).length === index + 1}
             <td style = "border:none">
@@ -356,22 +515,26 @@ let showcustomersForm = $state(false);
   {/each}
 
 <div class="sumAcount">
-  <label>אוכל חם / קר</label>
-  <input type={customer.hotOrCold} placeholder="לדוגמה: חם" />
+  <label>אוכל חם / קר</label>  <div>
 
+  <label>חם
+  <input type=radio name="hotOrCold" bind:group={customer.hotOrCold} value="חם"/></label>
+  <label>קר
+  <input type=radio name="hotOrCold" bind:group={customer.hotOrCold} value="קר"/></label>
+</div>
   <label>כמות אנשים:</label>
-  <input type="number" bind:value={customer.numOfSets} placeholder="כמות מנות:" />
+  <input type="number" bind:value={customer.numOfSets} min="1"placeholder="כמות מנות:" />
     <label>מחיר למנה :</label>
   <input type="number" bind:value={customer.orderBasePrice}  placeholder="מחיר למנה" />
     <label>סה״כ לתשלום :</label>
 
-  <input type="number" bind:value={orderPrice} placeholder="סה״כ לתשלום" />
+  <input type="number" bind:value={orderPrice} placeholder="סה״כ לתשלום" readonly/>
     <label>עלות משלוח :</label>
 
-  <input type="number" bind:value={customer.orderDeliveryPrice} placeholder="עלות משלוח" />
+  <input type="number" bind:value={customer.orderDeliveryPrice}   min="0" placeholder="עלות משלוח" />
     <label>סה״כ כולל משלוח :</label>
 
-  <input type="number" bind:value={orderTotalPrice} placeholder="סה״כ כולל משלוח" />
+  <input type="number" bind:value={orderTotalPrice} placeholder="סה״כ כולל משלוח" readonly/>
 
 
 <!-- not working --- not working -->
@@ -384,15 +547,16 @@ let showcustomersForm = $state(false);
     <button onclick={sendOrder}>שמור הזמנה </button>
     {:else}
     <button>נא למלא את כל השדות: 
-{#if !customer.dateOfSuplay}
-      <span style="color: yellow;">(תאריך אספקה)</span>
+        {#if !customer.deliveryPlace}
+      <a href="#missingDetails" class="highlight-link"> <span class="buttonSpan" > כתובת אספקה -</span></a>
+    {/if}
+    {#if !customer.dateOfSuplay}
+     <a href="#lachmajun-dateOfSuplay" class="highlight-link"> <span class="buttonSpan" >תאריך אספקה -</span></a>
     {/if}
     {#if !customer.houerOfSuplay}
-      <span style="color: yellow;">(שעת אספקה)</span>
+      <a href="#lachmajun-houerOfSuplay" class="highlight-link"> <span class="buttonSpan" >שעת אספקה</span></a>
     {/if}
-    {#if !customer.deliveryPlace}
-      <span style="color: yellow;">(כתובת אספקה)</span>
-    {/if}
+
 
     </button>
     {/if}
@@ -404,7 +568,7 @@ let showcustomersForm = $state(false);
 {#if toDoOrder.length === 0 && toDoOrder}
 <h1>לא נוספו פריטים להזמנה</h1>
 {:else}
-    <h2>הזמנה סופית</h2>
+    <h2 style="text-align: center;">הזמנה סופית - <span>{customer.name}</span></h2>
     <table>
       <thead>
         <tr>
@@ -428,7 +592,6 @@ let showcustomersForm = $state(false);
     </table>
 {/if}
   </div>
-
 
 <style>
   .form-container {
@@ -479,18 +642,19 @@ select:focus {
   }
   tr{
     display: grid;
-    grid-template-columns: 1fr 0.5fr 0.5fr 2fr 0.3fr;
+    grid-template-columns: 1fr 0.5fr 0.5fr 2fr 0.4fr;
   }
 
   input[type='number'] {
     width: 70%;
-    padding: 8px;
+    padding: min(8px, 1vw);
     margin: 5px;
     border: 1px solid #ccc;
     border-radius: 5px;
   }
   input[type='text'], input[type='date'], input[type='time'], textarea {
     width: 90%;
+    height: 1.5rem;
     padding: 8px;
     margin: 5px;
     border: 1px solid #ccc;
@@ -527,14 +691,18 @@ select:focus {
   button {
     padding: 10px 20px;
     border: none;
-    background: #007BFF;
+    background: #000000;
     color: white;
+    border: solid 1px #000000;
     border-radius: 5px;
     cursor: pointer;
+    transition: all 0.3s ease;
   }
 
   button:hover {
-    background: #0056b3;
+    background: #ffffff;
+    border: solid 1px #000000;
+    color: #000000;
   }
 tr.orderdItem {
   background-color: #b3e7ff; /* light blue background */
@@ -547,16 +715,28 @@ tr.orderdItem {
     background: #f9f9f9;
     border: 1px solid #ccc;
     border-radius: 10px;
-    max-width: 800px;
+    max-width: 1000px;
   }
-.suggestion-list {
+/* .suggestion-list {
   position: absolute;
   top: 100%;
   right: 0;
   left: 0;
   background: white;
   border: 1px solid #ccc;
-  max-height: 150px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  direction: rtl;
+} */
+.suggestion-list {
+ 
+  background: white;
+  border: 1px solid #ccc;
+  max-height: 200px;
   overflow-y: auto;
   z-index: 1000;
   padding: 0;
@@ -564,7 +744,6 @@ tr.orderdItem {
   list-style: none;
   direction: rtl;
 }
-
 .suggestion-list li {
   padding: 8px 10px;
   cursor: pointer;
@@ -583,9 +762,66 @@ tr.orderdItem {
 }
 .sumAcount{
   display: grid;
-  grid-template-columns: 1fr 5fr;
+  grid-template-columns: max-content 1fr;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+  padding: 15px;
+  background: #f4f4f4;
+  border: 1px solid #ccc;
+  border-radius: 5px;
 }
+ .suggestion-list li.selected {
+    background-color: #eee;
+    font-weight: bold;
+  }
 
+  #lachmajun-dateOfSuplay,
+  #lachmajun-houerOfSuplay,
+  #missingDetails {
+    background-color: #fff5f5;
+    border: 1px solid red;
+    color: red;
+    font-weight: bold;
+    scroll-margin-top: 150px; /* Adjust this value as needed */
+  }
+.lachmajun-input {
+    padding: 8px;
+    border-radius: 4px;
+    border: 2px solid #ccc;
+    font-size: 16px;
+  }
+  .lachmajun-input.invalid {
+    border-color: red;
+    background-color: #ffe6e6;
+  }
+  .lachmajun-warning {
+    color: red;
+    margin-top: 4px;
+    font-weight: bold;
+  }
+  .lachmajun-hebrew-day {
+    margin-top: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #006400;
+  }
+
+   .highlight-link {
+    color: rgb(255, 255, 177);
+    text-decoration: underline;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+
+  button:hover .buttonSpan {
+    color: #000000;
+  }
+  button:hover .buttonSpan:hover {
+    color: #ff0000;
+  }
+ 
   @media print {
     button, input, textarea {
       display: none !important;
