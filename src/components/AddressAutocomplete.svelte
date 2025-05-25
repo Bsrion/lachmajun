@@ -277,7 +277,7 @@
   }
 
   .search-input {
-    width: 100%;
+    width: 95%;
     padding: 0.65rem 0.75rem;
     font-size: 1rem;
     border: 1px solid #ccc;
@@ -333,19 +333,20 @@
 
   /* Save Button Styling */
   .save-button {
-    width: 100%;
-    padding: 0.75rem;
-    font-size: 1.1rem;
-    font-weight: bold;
-    background-color: #0077cc;
-    color: white;
+    width:100%;
+    padding: 10px 20px;
+    font-size: 1rem;
     border: none;
-    border-radius: 10px;
+    background: #000000;
+    color: white;
+    border: solid 1px #000000;
+    border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.25s ease;
+    transition: all 0.3s ease;
   }
 
   .save-button:hover {
-    background-color: #005fa3;
-  }
+background: #ffffff;
+    border: solid 1px #000000;
+    color: #000000  }
 </style>

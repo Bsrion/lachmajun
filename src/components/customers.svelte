@@ -168,23 +168,24 @@
 	}
 
 	button {
-		width: 50%;
+		width: 75%;
 		place-self: center;
-		background-color: #3498db;
-		color: white;
-		padding: 0.75rem 0;
-		font-size: 1.1rem;
-		border: none;
-		border-radius: 8px;
-		cursor: pointer;
-		font-weight: 700;
-		letter-spacing: 0.03em;
-		transition: background-color 0.3s ease;
+		 padding: 10px 20px;
+		 font-size: 1.2rem;
+    border: none;
+    background: #000000;
+    color: white;
+    border: solid 1px #000000;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+		
 	}
 
 	button:hover {
-		background-color: #2980b9;
-	}
+background: #ffffff;
+    border: solid 1px #000000;
+    color: #000000;	}
 
 	p {
 		margin-top: 1rem;

@@ -336,6 +336,7 @@ let showcustomersForm = $state(false);
     {/if}
 
   <!-- Toggle form for fully new customers -->
+  <div>
   <button onclick={() => showcustomersForm = !showcustomersForm} style="margin:10px 0;">
   {#if !showcustomersForm}
     לקוח חדש
@@ -348,8 +349,8 @@ let showcustomersForm = $state(false);
     <Customers client:load />
   </div>
   {/if}
-    <div>
     {#if showInputs}
+    <button onclick={editCustomerFilds} style='margin-right:10px'> ערוך פרטי לקוח </button>
     <div in:fly={{duration:500, y:200}} out:fly={{duration:500, y:-200}}>
     <input type="text"  bind:value={customer.id} placeholder="customer id" readonly/>
     <input type="text"  bind:value={customer.firstName} placeholder="firstName"/>
