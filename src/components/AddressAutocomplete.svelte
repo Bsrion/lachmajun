@@ -1,35 +1,42 @@
 <script>
-  // Props with defaults using runes
-  let { city: initialCity = "ירושלים", street: initialStreet = ""} = $props();
-import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, tick } from 'svelte';
 
-  const dispatch = createEventDispatcher();  
-  // Reactive state
+  // Event dispatcher to send selected address data
+  const dispatch = createEventDispatcher();
+
+  // Props with default values (from parent component or page)
+  let { city: initialCity = "ירושלים", street: initialStreet = "", houseNumber: initialHouseNumber = "", houseNotes: initialHouseNotes = "" } = $props();
+
+  // Reactive state variables
+  let selectedCity = $state(initialCity);
+  let selectedStreet = $state(initialStreet);
+  let houseNumber = $state(initialHouseNumber);
+  let houseNotes = $state(initialHouseNotes);
   let streets = $state([]);
   let citySuggestions = $state([]);
   let streetSuggestions = $state([]);
   let isLoading = $state(false);
+  let streetsLoaded = $state(false);
+  let isJerusalem = $state(false);
+
+  // UI interaction state
   let showCitySuggestions = $state(false);
   let showStreetSuggestions = $state(false);
   let focusedSuggestionIndex = $state(-1);
-  
-  // Local state for inputs
-  let selectedCity = $state(initialCity);
-  let selectedStreet = $state(initialStreet);
-  let streetsLoaded = $state(false);
 
-  // Load streets data
+  let cityListEl, streetListEl;
+
+  // Load and parse CSV with streets
   async function loadStreets() {
     if (streetsLoaded) return;
-    streetsLoaded = true;
     isLoading = true;
-    
+    streetsLoaded = true;
+
     try {
-      const response = await fetch('/public/data/streets_utf8.csv');
+      const response = await fetch('/data/streets_utf8.csv');
       const text = await response.text();
-      
       streets = text.split('\n')
-        .filter(row => row.trim())
+        .filter(Boolean)
         .map((row, index) => {
           const cols = row.split(',');
           return {
@@ -38,7 +45,8 @@ import { createEventDispatcher } from 'svelte';
             cityName: cols[1]?.trim()
           };
         });
-      
+
+      // Extract unique city names
       citySuggestions = [...new Set(streets.map(s => s.cityName).filter(Boolean))];
     } catch (err) {
       console.error('Error loading streets:', err);
@@ -47,173 +55,97 @@ import { createEventDispatcher } from 'svelte';
     }
   }
 
-  // Update street suggestions reactively
+  // Filter streets based on user input
   function updateStreetSuggestions() {
-  // Guard: if selectedStreet is missing or not a string, clear suggestions and exit early
-  if (!selectedStreet || typeof selectedStreet !== 'string') {
-    streetSuggestions = [];
-    showStreetSuggestions = false;
-    return;
+    if (!selectedStreet || !selectedCity) {
+      streetSuggestions = [];
+      showStreetSuggestions = false;
+      return;
+    }
+
+    const searchWords = selectedStreet.toLowerCase().split(/\s+/).filter(Boolean);
+
+    streetSuggestions = streets
+      .filter(s =>
+        s.cityName === selectedCity &&
+        s.streetName &&
+        searchWords.every(word => s.streetName.toLowerCase().includes(word))
+      )
+      .slice(0, 20);
+
+    focusedSuggestionIndex = -1;
+    showStreetSuggestions = streetSuggestions.length > 0;
   }
-  
-  const searchWords = String(selectedStreet).toLowerCase().split(/\s+/).filter(Boolean);
 
-  if (!selectedCity) {
-    streetSuggestions = [];
-    showStreetSuggestions = false;
-    return;
-  }
-  
-  streetSuggestions = streets
-    .filter(s => {
-      if (!s?.cityName || !s?.streetName) return false;
-      if (s.cityName !== selectedCity) return false;
-      if (searchWords.length === 0) return true;
-
-      const normalizedStreet = s.streetName.toLowerCase();
-      return searchWords.every(word => normalizedStreet.includes(word));
-    })
-    .slice(0, 20);
-
-  focusedSuggestionIndex = -1;
-  showStreetSuggestions = streetSuggestions.length > 0;
-}
-
-  // Event handlers
+  // City input change
   function handleCityInput(e) {
     selectedCity = e.target.value;
     showCitySuggestions = true;
+
     const term = selectedCity.toLowerCase();
-    citySuggestions = [...new Set(streets
-      .filter(s => s.cityName?.toLowerCase().includes(term))
-      .map(s => s.cityName)
+    citySuggestions = [...new Set(
+      streets.filter(s => s.cityName?.toLowerCase().includes(term)).map(s => s.cityName)
     )].slice(0, 10);
-    
+
     selectedStreet = '';
   }
 
+  // Street input change
   function handleStreetInput(e) {
     selectedStreet = e.target.value;
     showStreetSuggestions = true;
     updateStreetSuggestions();
   }
 
- // Update handleKeyDown to handle both city and street navigation
-  async function handleKeyDown(e, type) {
-  if (type === 'city') {
-    if (!showCitySuggestions) return;
+  // Scroll to selected suggestion
+  async function scrollToFocusedItem(type) {
+    await tick();
+    const listEl = type === 'city' ? cityListEl : streetListEl;
+    if (focusedSuggestionIndex >= 0 && listEl?.children[focusedSuggestionIndex]) {
+      listEl.children[focusedSuggestionIndex].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  // Keyboard navigation for suggestion lists
+  function handleKeyDown(e, type) {
+    let suggestions = type === 'city' ? citySuggestions : streetSuggestions;
+    if (!suggestions.length) return;
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      focusedSuggestionIndex = Math.min(focusedSuggestionIndex + 1, citySuggestions.length - 1);
-      await scrollToFocusedItem('city');
+      focusedSuggestionIndex = Math.min(focusedSuggestionIndex + 1, suggestions.length - 1);
+      scrollToFocusedItem(type);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       focusedSuggestionIndex = Math.max(focusedSuggestionIndex - 1, -1);
-      await scrollToFocusedItem('city');
+      scrollToFocusedItem(type);
     } else if (e.key === 'Enter' && focusedSuggestionIndex >= 0) {
       e.preventDefault();
-      selectCity(citySuggestions[focusedSuggestionIndex]);
-    }
-  } else { // street
-    if (!showStreetSuggestions) return;
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      focusedSuggestionIndex = Math.min(focusedSuggestionIndex + 1, streetSuggestions.length - 1);
-      await scrollToFocusedItem('street');
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      focusedSuggestionIndex = Math.max(focusedSuggestionIndex - 1, -1);
-      await scrollToFocusedItem('street');
-    } else if (e.key === 'Enter' && focusedSuggestionIndex >= 0) {
-      e.preventDefault();
-      selectStreet(streetSuggestions[focusedSuggestionIndex]);
+      type === 'city'
+        ? selectCity(suggestions[focusedSuggestionIndex])
+        : selectStreet(suggestions[focusedSuggestionIndex]);
     }
   }
-}
 
-
-  // Update scrollToFocusedItem to handle both types
-import { tick } from 'svelte';
-
-async function scrollToFocusedItem(type) {
-  await tick(); // wait for DOM updates
-
-  const selector = type === 'city' ? '.city-suggestions li' : '.street-suggestions li';
-  const items = document.querySelectorAll(selector);
-
-  if (focusedSuggestionIndex >= 0 && items[focusedSuggestionIndex]) {
-    items[focusedSuggestionIndex].scrollIntoView({ block: 'nearest' });
-  }
-}
-
-let element;
-
-   function selectCity(city) {
+  // Select city from suggestions
+  function selectCity(city) {
     selectedCity = city;
     selectedStreet = '';
     showCitySuggestions = false;
-
-    dispatch('citySelect', city);
   }
 
+  // Select street from suggestions
   function selectStreet(street) {
     selectedStreet = street.streetName;
     showStreetSuggestions = false;
-
-    dispatch('streetSelect', street.streetName);
   }
-  // Ensure we have element reference before dispatching
-  $effect(() => {
-    if (element) {
-      // Component is mounted and element is available
-    }
-  });
+
   loadStreets();
 </script>
 
-<div class="address-search" bind:this={element}>
- 
-  <!-- Street Search - No changes needed -->
-  <div class="search-group">
-    <label for="street-input">רחוב:</label>
-    <input
-      id="street-input"
-      type="text"
-      bind:value={selectedStreet}
-      oninput={handleStreetInput}
-      onkeydown={(e) => handleKeyDown(e, 'street')}
-      onfocus={() => {
-        showStreetSuggestions = true;
-        updateStreetSuggestions();
-        focusedSuggestionIndex = -1;
-      }}
-      onblur={() => setTimeout(() => showStreetSuggestions = false, 200)}
-      placeholder={selectedCity ? `חפש רחוב ב${selectedCity}` : 'בחר עיר תחילה'}
-      class="search-input"
-      disabled={isLoading || !selectedCity}
-      autocomplete="off"
-    />
-    
-    {#if showStreetSuggestions && streetSuggestions.length > 0}
-      <ul class="suggestions street-suggestions">
-        {#each streetSuggestions as street, index (street.id)}
-          <li 
-            onclick={() => selectStreet(street)}
-            onmouseenter={() => focusedSuggestionIndex = index}
-            class:active={index === focusedSuggestionIndex}
-            tabindex="0"
-          >
-            {street.streetName}
-          </li>
-        {/each}
-      </ul>
-    {:else if selectedStreet && streetSuggestions.length === 0 && selectedCity}
-      <div class="no-results">לא נמצאו רחובות תואמים</div>
-    {/if}
-  </div>
-   <!-- City Search - Updated with keyboard navigation -->
+<!-- UI Layout -->
+<div class="address-search">
+  <!-- City Field -->
   <div class="search-group">
     <label for="city-input">עיר:</label>
     <input
@@ -222,25 +154,28 @@ let element;
       bind:value={selectedCity}
       oninput={handleCityInput}
       onkeydown={(e) => handleKeyDown(e, 'city')}
-      onfocus={() => {
-        showCitySuggestions = true;
-        focusedSuggestionIndex = -1;
-      }}
-      onblur={() => setTimeout(() => showCitySuggestions = false, 200)}
+      onfocus={() => { showCitySuggestions = true; focusedSuggestionIndex = -1; }}
+      onblur={() => setTimeout(() => showCitySuggestions = false, 100)}
       placeholder="בחר עיר"
       class="search-input"
-      disabled={isLoading}
+      disabled={isLoading || !isJerusalem}
+      readonly={!isJerusalem}
       autocomplete="off"
     />
+    <input type="checkbox" onchange={isJerusalem = !isJerusalem} checked={isJerusalem} style="margin-top:7px;">
+    {#if !isJerusalem}
+      <span style="font-size:small; color:gray; margin-left:0.5rem;">לחץ לאפשר לבחור עיר אחרת</span>
+    {:else}
+      <span style="font-size:small; color:gray; margin-left:0.5rem;">בטל סימון לאפשרות לבחור עיר אחרת</span>
+    {/if}
     
     {#if showCitySuggestions && citySuggestions.length > 0}
-      <ul class="suggestions city-suggestions">
+      <ul class="suggestions city-suggestions" bind:this={cityListEl}>
         {#each citySuggestions as city, index (city)}
           <li 
-            onclick={() => selectCity(city)}
-            onkeydown={(e) => e.key === 'Enter' && selectCity(city)}
-            onmouseenter={() => focusedSuggestionIndex = index}
             tabindex="0"
+            onclick={() => selectCity(city)}
+            onmouseenter={() => focusedSuggestionIndex = index}
             class:active={index === focusedSuggestionIndex}
           >
             {city}
@@ -250,49 +185,167 @@ let element;
     {/if}
   </div>
 
+  <!-- Street Field -->
+  <div class="search-group">
+    <label for="street-input">רחוב:</label>
+    <input
+      id="street-input"
+      type="text"
+      bind:value={selectedStreet}
+      oninput={handleStreetInput}
+      onkeydown={(e) => handleKeyDown(e, 'street')}
+      onfocus={() => { showStreetSuggestions = true; updateStreetSuggestions(); focusedSuggestionIndex = -1; }}
+      onblur={() => setTimeout(() => showStreetSuggestions = false, 200)}
+      placeholder={selectedCity ? `חפש רחוב ב${selectedCity}` : 'בחר עיר תחילה'}
+      class="search-input"
+      disabled={isLoading || !selectedCity}
+      autocomplete="off"
+    />
+
+    {#if showStreetSuggestions && streetSuggestions.length > 0}
+      <ul class="suggestions street-suggestions" bind:this={streetListEl}>
+        {#each streetSuggestions as street, index (street.id)}
+          <li 
+            tabindex="0"
+            onclick={() => selectStreet(street)}
+            onmouseenter={() => focusedSuggestionIndex = index}
+            class:active={index === focusedSuggestionIndex}
+          >
+            {street.streetName}
+          </li>
+        {/each}
+      </ul>
+    {:else if selectedStreet && streetSuggestions.length === 0 && selectedCity}
+      <div class="no-results">לא נמצאו רחובות תואמים</div>
+    {/if}
+  </div>
+
+  <!-- House Number & Notes -->
+  <div class="search-group">
+    <label for="house-number-input">מספר בית:</label>
+    <input
+      id="house-number-input"
+      type="text"
+      class="search-input"
+      placeholder="מספר בית"
+      bind:value={houseNumber}
+      autocomplete="off"
+    />
+    <textarea
+      class="search-input"
+      placeholder="הערות (אופציונלי)"
+      bind:value={houseNotes}
+      rows="2"
+    ></textarea>
+  </div>
+
+  <!-- Submit Button -->
+  <button class="save-button" onclick={() => {
+    dispatch('streetSelect', {
+      city: selectedCity,
+      streetName: selectedStreet,
+      streetNumber: houseNumber,
+      streetNote: houseNotes
+    });
+  }}>
+    שמור וסגור
+  </button>
 </div>
+
+<!-- Styles -->
 <style>
   .address-search {
-    max-width: 400px;
-    margin: 1rem auto;
+    max-width: 420px;
+    margin: 2rem auto;
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    font-family: system-ui, sans-serif;
   }
+
   .search-group {
+    margin-bottom: 1.25rem;
     position: relative;
-    margin-bottom: 1rem;
   }
+
+  .search-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+  }
+
   .search-input {
     width: 100%;
-    padding: 0.5rem;
+    padding: 0.65rem 0.75rem;
     font-size: 1rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    transition: border 0.2s, box-shadow 0.2s;
   }
+
+  .search-input:focus {
+    border-color: #0077cc;
+    box-shadow: 0 0 0 3px rgba(0, 119, 204, 0.2);
+    outline: none;
+  }
+
   .suggestions {
     position: absolute;
     width: 100%;
-    max-height: 200px;
+    max-height: 220px;
     overflow-y: auto;
-    background: white;
-    border: 1px solid #ddd;
+    background: #fff;
+    border: 1px solid #ccc;
     border-top: none;
-    border-radius: 0 0 4px 4px;
+    border-radius: 0 0 8px 8px;
     margin: 0;
     padding: 0;
     list-style: none;
-    z-index: 20;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 1000;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
   }
+
   .suggestions li {
-    padding: 0.5rem;
+    padding: 0.65rem 0.75rem;
     cursor: pointer;
+    transition: background 0.2s;
   }
+
   .suggestions li.active,
   .suggestions li:hover {
-    background-color: #f5f5f5;
+    background-color: #f0f8ff;
   }
+
   .no-results {
-    padding: 0.5rem;
-    color: #666;
+    margin-top: 0.25rem;
+    font-size: 0.9rem;
+    color: #999;
     font-style: italic;
+  }
+
+  textarea.search-input {
+    resize: vertical;
+    min-height: 80px;
+    margin-top: 0.5rem;
+  }
+
+  /* Save Button Styling */
+  .save-button {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    background-color: #0077cc;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.25s ease;
+  }
+
+  .save-button:hover {
+    background-color: #005fa3;
   }
 </style>

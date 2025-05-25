@@ -18,6 +18,8 @@ import AddressSearch from '../components/AddressAutocomplete.svelte';
     houerOfSuplay:null,
     deliveryCity:'ירושלים',
     deliveryPlace:'',
+    deliveryPlaceNumber:'',
+    deliveryPlaceNote:'',
     dateOfOrder:null,
     hotOrCold: '',
     comments: '',
@@ -37,7 +39,7 @@ import AddressSearch from '../components/AddressAutocomplete.svelte';
 
   let orderPrice = $derived(customer.orderBasePrice * customer.numOfSets);
   let orderTotalPrice = $derived(orderPrice + customer.orderDeliveryPrice);
-  let orderDelveryFullAdd = $derived(customer.deliveryPlace + ', ' + customer.deliveryCity);
+  let orderDelveryFullAdd = $derived(customer.deliveryPlace + ' ' + customer.deliveryPlaceNumber + ', ' + customer.deliveryCity + ' - ' + customer.deliveryPlaceNote)  ;
   let showDeliveryInputs = $state(false);
 
   let showInputs = $state(false);
@@ -370,8 +372,8 @@ let showcustomersForm = $state(false);
 {#if showDeliveryInputs}
   <div
     style="position: relative;"
-    in:fly={{ duration: 500, x: -500 }}
-    out:fly={{ duration: 500, x: 500 }}
+    in:fly={{ duration: 750, x: -500 }}
+    out:fly={{ duration: 750, x: 500 }}
     onintroend={() => {
       const input = document.querySelector('#street-input');
       input?.focus();
@@ -384,15 +386,20 @@ let showcustomersForm = $state(false);
       close
     </button>
 
-    <AddressSearch
-      city={customer.deliveryCity}
-      on:citySelect={(e) => customer.deliveryCity = e.detail}
-      street={customer.deliveryPlace}
-      on:streetSelect={(e) => {
-        customer.deliveryPlace = e.detail;
-        showDeliveryInputs = false;
-      }}
-    />
+   <AddressSearch
+  city={customer.deliveryCity}
+  street={customer.deliveryPlace}
+  houseNumber={customer.deliveryPlaceNumber}
+  houseNotes={customer.deliveryPlaceNote}
+  on:streetSelect={(e) => {
+    customer.deliveryCity        = e.detail.city;
+    customer.deliveryPlace       = e.detail.streetName;
+    customer.deliveryPlaceNumber = e.detail.streetNumber;
+    customer.deliveryPlaceNote       = e.detail.streetNote;
+    showDeliveryInputs = false;
+  }}
+/>
+
   </div>
 {/if}
 
