@@ -61,6 +61,8 @@ let toDateInput = $state(todayStr);
       return customer.dateOfSuplay || '';
     case 'date_of_order':
       return new Date(order.date_of_order);
+       case 'orderStatus':
+      return customer.orderStatus || '';
     default:
       return '';
   }
@@ -174,6 +176,18 @@ function showAll() {
       error = err.message;
     }
   });
+
+   // Assuming this is per each `order`
+  function groupItemsByCategory(items) {
+    const grouped = {};
+    for (const item of items) {
+      if (!grouped[item.category]) {
+        grouped[item.category] = [];
+      }
+      grouped[item.category].push(item);
+    }
+    return grouped;
+  }
 </script>
 
 
@@ -206,69 +220,93 @@ function showAll() {
   </div>
 </div>
 
-<div class="sort-controls">
-  <select bind:value={sortField}>
-    <option value="customer_name">שם לקוח</option>
-    <option value="status">סטטוס</option>
-    <!-- Add more sort options as needed -->
+<div class="sort-controls flex items-center gap-4 mb-4">
+  <select
+    bind:value={sortField}
+    class="p-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+  >
+    <option value="date_of_order">תאריך הזמנה</option>
+    <option value="id">מספר לקוח</option>
+    <option value="name">שם לקוח</option>
+    <option value="orderStatus">סטטוס</option>
+    <option value="deliveryDate"> תאריך משלוח</option>
+    <option value="total_price">סכום כולל</option>
+    <option value="order_num">מספר הזמנה</option>
+    <option value="phone">טלפון</option>
+    <option value="address">כתובת</option>
   </select>
 
-  <button onclick={() => sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'}>
+  <button
+    class="bg-gray-100 border border-gray-300 px-4 py-2 rounded hover:bg-gray-200"
+    onclick={() => sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'}
+  >
     החלף כיוון מיון
   </button>
 
-  <button class="reset-sort-button" onclick={() => {
-    sortField = 'date_of_order';
-    sortDirection = 'desc';
-  }}>
+  <button
+    class="bg-red-100 text-red-700 border border-red-300 px-4 py-2 rounded hover:bg-red-200"
+    onclick={() => {
+      sortField = 'date_of_order';
+      sortDirection = 'desc';
+    }}
+  >
     אפס מיון
   </button>
 </div>
 
+
     <table>
       <thead>
         <tr>
-          <th onclick={() => setSort('date_of_order')}>
-            תאריך
-            {#if sortField === 'date_of_order'}
-              <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-            {/if}
-          </th>
-          <th onclick={() => setSort('order_num')}>
+          
+          <th onclick={() => setSort('order_num')} style="max-width:15px">
             מספר הזמנה
             {#if sortField === 'order_num'}
               <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             {/if}
           </th>
-          <th onclick={() => setSort('id')}>
+          <th onclick={() => setSort('date_of_order')} style="max-width:50px">
+            תאריך
+            {#if sortField === 'date_of_order'}
+              <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+            {/if}
+          </th>
+          <th onclick={() => setSort('id')} style="max-width:15px">
             מספר לקוח
             {#if sortField === 'id'}
               <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             {/if}
           </th>
-          <th onclick={() => setSort('name')}>
+          <th onclick={() => setSort('name')} style="max-width:100px">
             פרטי לקוח
             {#if sortField === 'name'}
               <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             {/if}
           </th>
           <th>פרטי מוצרים</th>
-          <th onclick={() => setSort('deliveryDate')}>
+          <th onclick={() => setSort('deliveryDate')} style="max-width:30px">
             תאריך ושעת משלוח
             {#if sortField === 'deliveryDate'}
               <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             {/if}
           </th>
+          <th onclick={() => setSort('orderStatus')} style="max-width:15px">
+            סטטוס ההזמנה
+            {#if sortField === 'orderStatus'}
+              <span class="sort-arrow">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+            {/if}
+          </th>
+
         </tr>
       </thead>
       <tbody>
 {#each sortOrders(filterOrdersByDate(orders)) as order (order.order_num)}
 
           <tr>
-            <td class="rtl">{formatDate(order.date_of_order)}</td>
             <td class="rtl">{order.order_num}</td>
-            <td class="rtl">{order.parsed_data?.customer?.id || '—'}</td>
-            <td>
+            <td class="rtl" style="max-width:65px">{formatDate(order.date_of_order)}</td>
+            <td class="rtl" style="max-width:15px">{order.parsed_data?.customer?.id || '—'}</td>
+            <td style="max-width:100px">
               {#if order.parsed_data?.customer}
                                                 <strong>שם:</strong>
                 <strong>{order.parsed_data.customer.firstName || '—'} 
@@ -286,24 +324,34 @@ function showAll() {
               {/if}
             </td>
             <td>
-              {#if order.parsed_data?.items}
-                <ul class="order-items">
-                  {#each order.parsed_data.items as item}
-                    <li>
-                      {item.name} (x{item.quantity}) — {item.category}
-                      {#if item.comment}
-                        <br><small><em>הערה: {item.comment}</em></small>
-                      {/if}
-                    </li>
-                  {/each}
-                </ul>
-              {:else}
-                <em>אין פריטים</em>
-              {/if}
-            </td>
-            <td class="rtl">{order.parsed_data?.customer?.dateOfSuplay || '—'} <br>
+  {#if order.parsed_data?.items}
+    <ul class="order-items">
+      {#each Object.entries(groupItemsByCategory(order.parsed_data.items)) as [category, items]}
+        <li>
+          <strong>{category}</strong><hr>
+          <ul >
+            {#each items as item}
+              <li>
+                {item.name} (x{item.quantity})
+                {#if item.comment}
+                  <br><small><em>הערה: {item.comment}</em></small>
+                {/if}
+              </li>
+            {/each}
+          </ul>
+        </li>
+      {/each}
+    </ul>
+  {:else}
+    <em>אין פריטים</em>
+  {/if}
+</td>
+
+            <td class="rtl" style="max-width:30px">{order.parsed_data?.customer?.dateOfSuplay || '—'} <br>
                             {order.parsed_data?.customer?.houerOfSuplay || '—'} <br>
                             {order.parsed_data?.customer?.orderDay || '—'} </td>
+            <td class="rtl" style="max-width:15px">{order.parsed_data?.customer?.orderStatus || '—'}</td>
+
           </tr>
         {/each}
       </tbody>
@@ -569,5 +617,45 @@ input[type="date"]:focus {
 .reset-sort-button:hover {
   background-color: #ccc;
 }
+  .sort-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: center;
+  }
+
+  .sort-controls select,
+  .sort-controls button {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+  }
+
+  .sort-controls button:hover {
+    background-color: #eee;
+    cursor: pointer;
+  }
+
+  .sort-controls .reset-sort-button {
+    background-color: #ffecec;
+    color: #c00;
+    border-color: #f5c2c2;
+  }
+
+  .sort-controls .reset-sort-button:hover {
+    background-color: #fdd;
+  }
+
+  .order-items > li {
+  margin-bottom: 1rem;
+}
+.order-items ul {
+  margin-right: 1rem;
+  list-style-type: disc;
+        padding-inline-start:5px;
+
+}
 
 </style>
+

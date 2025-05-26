@@ -24,7 +24,7 @@ import AddressSearch from '../components/AddressAutocomplete.svelte';
     hotOrCold: '',
     comments: '',
     orderNum: null,
-    orderStatus: 'open',
+    orderStatus: 'פתוח',
     orderDay: '',
     orderDate: null,
     orderTime: null,
@@ -260,7 +260,7 @@ function selectCustomer(cust) {
     name: `${cust.firstName} ${cust.lastName} - ${cust.phone} - ${cust.address}` // optional, for display onlyß
   };
   nameSuggestions = [];
-  showNewUserPrompt = false;
+  showNewUserPrompt = false;n
   isNewCustomer = false;
 }
 
