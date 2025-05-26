@@ -1,5 +1,5 @@
 ---
-  import Customers from '../components/customers.svelte';
+  import CustomerForm from '../lib/CustomerForm.svelte'
 import Layout from '../layouts/Layout.astro';
 import Heder_hybid from '../components/heder_hybid.svelte';
 
@@ -8,6 +8,6 @@ import Heder_hybid from '../components/heder_hybid.svelte';
 <Layout>
 			<Heder_hybid client:visible/>
 
-  <Customers client:load/>
+  <CustomerForm client:load/>
 
 </Layout>

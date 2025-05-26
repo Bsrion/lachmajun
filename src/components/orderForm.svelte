@@ -1,8 +1,10 @@
 <script>
 
-import Customers from './customers.svelte';
+import CustomerForm from '../lib/CustomerForm.svelte';
 import { blur, crossfade, draw, fade, fly, scale, slide} from 'svelte/transition';
 import AddressSearch from '../components/AddressAutocomplete.svelte';
+import DateTimePicker from '../components/DatePicker.svelte';
+import Tafritim from '../components/tafritim.svelte'
 
   let customer = $state({
     firstName: '',
@@ -36,6 +38,7 @@ import AddressSearch from '../components/AddressAutocomplete.svelte';
     orderItems: [],
 
   });
+
 
   let orderPrice = $derived(customer.orderBasePrice * customer.numOfSets);
   let orderTotalPrice = $derived(orderPrice + customer.orderDeliveryPrice);
@@ -161,34 +164,12 @@ function maybeAddNewRow(item) {
 }
 
 
-let nameSuggestions = $state([]);
-let showNewUserPrompt = $state(false);
-let selectedIndex = $state(-1);
-let suggestionRefs = $state([]);
- let warning = $state('');
-const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+  let nameSuggestions = $state([]);
+  let showNewUserPrompt = $state(false);
+  let selectedIndex = $state(-1);
+  let suggestionRefs = $state([]);
+  let warning = $state('');
 
-function validateDate() {
-    if (!customer.dateOfSuplay) {
-      warning = '';
-      customer.orderDay = '';
-      return;
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const selectedDate = new Date(customer.dateOfSuplay);
-    selectedDate.setHours(0, 0, 0, 0);
-
-    if (selectedDate < today) {
-      warning = 'התאריך לא יכול להיות בעבר!';
-    } else {
-      warning = '';
-    }
-
-      customer.orderDay = hebrewDays[selectedDate.getDay()];
-  }
 
 async function onNameInput() {
   const input = customer.name.trim();
@@ -273,6 +254,14 @@ let showcustomersForm = $state(false);
     return `${day}-${month}-${year}`;
   }
 
+
+	function handleSave(event) {
+		const { updatedCustomer } = event.detail;
+		showcustomersForm = false; // hide form
+	}
+  function handleCancel() {
+		showcustomersForm = false;
+	}
 </script>
   <h1>הצעת מחיר / הזמנה</h1>
 
@@ -346,7 +335,12 @@ let showcustomersForm = $state(false);
   </button>
   {#if showcustomersForm}
   <div in:scale={{duration:1000}} out:scale={{duration:1000}}>
-    <Customers client:load />
+         <div class="edit-form-container">
+    	<CustomerForm
+		on:save={handleSave}
+		on:cancel={handleCancel}
+	/>
+  </div>
   </div>
   {/if}
     {#if showInputs}
@@ -359,7 +353,7 @@ let showcustomersForm = $state(false);
     <input type="text"  bind:value={customer.address} placeholder="phone"/>
     </div>
     {/if}
-     <input
+    <div> <input
   type="text"
   bind:value={orderDelveryFullAdd}
   onclick={() => showDeliveryInputs = !showDeliveryInputs}
@@ -367,8 +361,8 @@ let showcustomersForm = $state(false);
   id="missingDetails"
   autocomplete="off"
   readonly
-  style="cursor:pointer"
-/>
+  style="cursor:pointer; width:50%"
+/></div>
 
 {#if showDeliveryInputs}
   <div
@@ -405,15 +399,20 @@ let showcustomersForm = $state(false);
 {/if}
 
   <div><div>
-   <input
-  type="date"
-  bind:value={customer.dateOfSuplay}
-  placeholder="תאריך אספקה"
-  id="lachmajun-dateOfSuplay"
-  class="lachmajun-input"
-  class:invalid={warning}
-  oninput={validateDate}
+<DateTimePicker
+  date={customer.dateOfSuplay}
+  time={customer.houerOfSuplay}
+  idDate="date-input"
+  idTime="time-input"
+  {warning}
+    on:dateOrTimeChange={(e) => {
+    customer.dateOfSuplay = e.detail.date;
+    customer.houerOfSuplay = e.detail.time;
+    console.log(customer.dateOfSuplay, customer.houerOfSuplay)
+  }}
 />
+
+<Tafritim  on:MachirMana = {(data)=>customer.orderBasePrice = data.detail}/>
 
   {#if customer.orderDay && !warning}
     <span class="lachmajun-hebrew-day">יום {customer.orderDay}</span>
@@ -422,16 +421,10 @@ let showcustomersForm = $state(false);
   {#if warning}
     <div class="lachmajun-warning">{warning}</div>
   {/if}
-  <input
-    type="time" 
-    bind:value={customer.houerOfSuplay} placeholder="שעת אספקה"
-    id="lachmajun-houerOfSuplay" class="lachmajun-input"
-  /></div>
+  </div>
         </div>
   </div>
 </div>
-
-
   {#each [...new Set(orderItems.map(i => i.category))] as category}
     <h2>{category}</h2>
     <table>
@@ -602,6 +595,7 @@ let showcustomersForm = $state(false);
   </div>
 
 <style>
+
   .form-container {
     max-width:1200px;
     margin: 0 auto;

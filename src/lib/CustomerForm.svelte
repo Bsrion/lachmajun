@@ -1,6 +1,15 @@
 <script>
+	import { createEventDispatcher } from 'svelte';
+
+	const dispatch = createEventDispatcher();
+
+	const { customer = {}, isEdit = false } = $props();
+
+	let message = $state('');
+	let errorDetails = $state('');
+
 	let formData = $state({
-		firstName:'',
+		firstName: '',
 		lastName: '',
 		phone: '',
 		phone2: '',
@@ -11,56 +20,53 @@
 		userPassword: ''
 	});
 
-	let message = $state('');
-	let errorDetails = $state('');
+	$effect(() => {
+		if (customer) {
+			Object.assign(formData, customer);
+			if (isEdit && customer.id) {
+				formData.id = customer.id;
+			}
+		}
+	});
 
-	async function submitForm(e) {
+	async function handleSubmit(e) {
 		e.preventDefault();
+
 		message = '';
 		errorDetails = '';
 
 		try {
-			const response = await fetch('https://dilen-digital.co.il/api/customers.php', {
+			const url = isEdit
+				? `https://dilen-digital.co.il/api/update_customer.php?id=${customer.id}`
+				: `https://dilen-digital.co.il/api/customers.php`;
+
+			const res = await fetch(url, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(formData)
 			});
 
-			const text = await response.text(); 
-			console.log('Server response:', text);
-
-			let result;
-			try {
-				result = JSON.parse(text);
-			} catch (jsonErr) {
-				throw new Error('Invalid JSON from server. Raw: ' + text);
-			}
-
+			const text = await res.text();
+			const result = JSON.parse(text);
 			message = result.message;
 
-			if (result.success) {
-				formData = {
-					firstName: '',
-					lastName: '',
-					phone: '',
-					phone2: '',
-					email: '',
-					address: '',
-					comment: '',
-					userName: '',
-					userPassword: ''
-				};
-			}
+		if (result.success) {
+			dispatch('save', { updatedCustomer: formData });
+				dispatch('cancel');
+		}
 		} catch (err) {
-			console.error('❌ submitForm error:', err);
-			message = '⚠ שגיאה בשליחת הטופס לשרת';
+			console.error(err);
 			errorDetails = err.message;
+			message = 'שגיאה בשליחת הטופס';
 		}
 	}
 </script>
-	<h2>טופס לקוח חדש</h2>
+<div class="form-wrapper">
+	<h2>טופס לקוח חדש / עדכון / עריכה</h2>
+			<button type="button" onclick={() => dispatch('cancel')}>❌ סגור ללא שמירה</button>
 
-<form onsubmit={submitForm} class="form-container" aria-label="Customer Form">
+<form onsubmit={handleSubmit} class="form-container" aria-label="Customer Form">
+
 	<label>
 		<span>שם פרטי *</span>
 		<input bind:value={formData.firstName} placeholder="הכנס שם פרטי" required autocomplete="given-name" />
@@ -106,24 +112,31 @@
 		<input type="password" bind:value={formData.userPassword} placeholder="סיסמה" />
 	</label>
 
-	<button type="submit">שמור</button>
+	<button type="submit">{isEdit ? 'עדכן' : 'שמור'}</button>
 
 	{#if message}
-		<p class:success-message={message.includes('שמור')} class:error-message={!message.includes('שמור')}>
-			{message}
-		</p>
+		<p class="success">{message}</p>
 	{/if}
-
 	{#if errorDetails}
-		<pre class="error-details">{errorDetails}</pre>
+		<p class="error">{errorDetails}</p>
 	{/if}
 </form>
-
+</div>
 <style>
+	.form-wrapper {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin: 0 auto;
+		padding: 1rem;
+		background: #ffffff;
+		border-radius: 12px;
+		box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+	}
 	.form-container {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		max-width: 800px;
+		width: clamp(550px, 50vw, 800px);	;
 		gap: 5px 20px;
 		margin: 2rem auto;
 		padding: 2rem;

@@ -27,6 +27,7 @@ onMount(() => {
 <div class="nav">
     <nav>
         {#if comperDiv < 15}
+         <img src=/logo.svg alt="Logo" style="width: 150px; height: 150px; position: fixed; top: -10px; left: 30px; z-index: 3000;">
         <ul out:fly={{ y: -50, duration: 350, delay: 50 }}>
             <li in:fly={{ y: -50, duration: 500, delay: 150, easing:cubicOut}}><a href="/">בית</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 200, easing:cubicOut}}><a href="/Neworder">פתיחת הזמנות</a></li>
