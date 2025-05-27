@@ -105,7 +105,40 @@ function updateCustomerInList(updated) {
 		customers = updatedList;
 	}
 }
+  // scrolling by arrow keys
+let selectedIndex = $state(0);
+let tableRef;
 
+function handleKeyDown(event) {
+  const total = sortedCustomers.length;
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    if (selectedIndex < total - 1) selectedIndex++;
+    scrollToRow();
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    if (selectedIndex > 0) selectedIndex--;
+    scrollToRow();
+  } else if (event.key === 'Enter') {
+    event.preventDefault();
+    if (sortedCustomers[selectedIndex]) {
+      selectedCustomer = sortedCustomers[selectedIndex];
+      showForm = true;
+    }
+  }
+}
+
+function scrollToRow() {
+  const rows = tableRef?.querySelectorAll('tbody tr');
+  const selectedRow = rows?.[selectedIndex];
+  if (selectedRow) {
+    selectedRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+function onRowMouseOver(index) {
+  selectedIndex = index;
+}
   onMount(fetchCustomers);
 </script>
 
@@ -124,9 +157,15 @@ function updateCustomerInList(updated) {
   </div>
 
   <!-- Table -->
-  <div class="container">
-    <div class="table-wrapper">
-      <table>
+<div
+  class="container"
+  bind:this={tableRef}
+  tabindex="0"
+  onkeydown={handleKeyDown}
+>
+    <div class="table-wrapper" onmouseenter={() => isTableHovered = true} onmouseleave={() => isTableHovered = false}>
+  <table tabindex="0" bind:this={tableRef} onkeydown={handleKeyDown}>
+
         <thead>
           <tr>
             <th onclick={() => sortBy('id')}># {getSortSymbol('id')}</th>
@@ -138,17 +177,23 @@ function updateCustomerInList(updated) {
           </tr>
         </thead>
         <tbody>
-         {#each sortedCustomers as customer (customer.id)}
-	<tr ondblclick={() => onRowDblClick(customer)} style="cursor: pointer;">
-		<td>{customer.id}</td>
-		<td>{customer.firstName}</td>
-		<td>{customer.lastName}</td>
-		<td>{customer.phone}</td>
-		<td>{customer.email}</td>
-		<td>{customer.address}</td>
-	</tr>
-{/each}
-        </tbody>
+  {#each sortedCustomers as customer, index (customer.id)}
+    <tr 
+      class:selected={selectedIndex === index} 
+      onmouseover={() => onRowMouseOver(index)} 
+      ondblclick={() => onRowDblClick(customer)}
+    >
+      <td>{customer.id}</td>
+      <td>{customer.firstName}</td>
+      <td>{customer.lastName}</td>
+      <td>{customer.phone}</td>
+      <td>{customer.email}</td>
+      <td>{customer.address}</td>
+    </tr>
+  {/each}
+</tbody>
+
+
       </table>
     </div>
   </div>
@@ -168,6 +213,11 @@ function updateCustomerInList(updated) {
 
 
 <style>
+tr.selected {
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
 .blurred {
   filter: blur(5px);
   transition: filter 0.3s ease;
@@ -214,7 +264,7 @@ function updateCustomerInList(updated) {
 
   }
   .container {
-    max-width: 1000px;
+    max-width: clamp(300px, 90vw, 1200px);
     height: 80vh;
     overflow: auto;
     margin: 0.2rem auto 5rem auto;
@@ -228,7 +278,7 @@ function updateCustomerInList(updated) {
     overflow-x: auto;
     border: 1px solid #e0e0e0;
     border-radius: 10px;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 5px rgba(0,0,0,0.15);
   }
 
   table {
@@ -236,6 +286,11 @@ function updateCustomerInList(updated) {
     border-collapse: collapse;
     min-width: 700px;
   }
+ table:focus {
+  outline: none;
+  /* or to remove the blue glow completely */
+  box-shadow: none;
+}
 
   th, td {
     padding: 1em;
@@ -258,15 +313,11 @@ function updateCustomerInList(updated) {
     border-bottom: 1px solid #eee;
   }
 
-  tr:hover {
-    background-color: #fafafa;
-  }
-
   .serchInput {
     display: flex;
     gap: 1rem;
-    justify-content: center;
-    max-width: 1000px;
+    justify-content: start;
+    max-width: clamp(500px, 50vw, 1200px);
     margin: 0 auto 0 auto;
     position: sticky;
     top: 0px;

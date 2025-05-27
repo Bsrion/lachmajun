@@ -1,6 +1,7 @@
 <script>
 
 import CustomerForm from '../lib/CustomerForm.svelte';
+import { onMount } from 'svelte';
 import { blur, crossfade, draw, fade, fly, scale, slide} from 'svelte/transition';
 import AddressSearch from '../components/AddressAutocomplete.svelte';
 import DateTimePicker from '../components/DatePicker.svelte';
@@ -58,6 +59,23 @@ import Tafritim from '../components/tafritim.svelte'
   'אלומיניום לתיבול': ['מגש אלומיניום קטן', 'מגש אלומיניום גדול'],
   'שונות': ['מגבונים', 'ניילון נצמד', 'נייר כסף']
 };
+
+// product list from server
+let products = $state([]);
+ onMount(async () => {
+    try {
+      const res = await fetch('https://dilen-digital.co.il/api/production.php');
+      if (!res.ok) throw new Error('Failed to fetch products');
+      products = await res.json();
+      console.log('Products loaded:', products);
+    } catch (e) {
+      error = e.message;
+    }
+  });
+
+  // product list from server
+
+
 let orderItems = $state([
   { category: 'סלטים', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['סלטים'] },
   { category: 'רטבים לסלט', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['רטבים לסלט'] },

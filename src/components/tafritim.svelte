@@ -62,7 +62,6 @@ let TafritimPrice = $derived.by(() => {
     border-radius: 10px;
     background: #f9f9f9;
     margin: 35px auto 20px auto;
-    max-width: 800px;
   }
 
   .tafritim-container label {

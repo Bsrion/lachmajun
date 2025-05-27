@@ -15,4 +15,55 @@ import Heder_hybid from '../components/heder_hybid.svelte';
 
 <Layout>
 			<Heder_hybid client:visible/>
+			<a href="/Neworder"><img src="/logo.svg" alt="Astro Logo" class="logo" />
+			<h1 class=" title">מערכת לניהול הזמנות</h1></a>
+			<p></p>
 </Layout>
+
+
+<style>
+	a {
+		text-decoration: none;
+		color: inherit;
+	}
+body {
+		background-color: #f0f0f0;
+		font-family: 'Arial', sans-serif;
+
+	}
+	.logo {
+		width: 800px;
+		height: auto;
+		display: block;
+		margin: 0 auto;
+		opacity: 0;
+		transform: translateY(75%);
+		animation: pasha 3s ease-in-out  forwards;
+	}			
+	.title{
+		text-align: center;
+		max-width: fit-content;
+		font-size: 2rem;
+		color: #ffffff;
+		opacity: 0;
+		font-weight: 600;
+		font-family: 'Arial', sans-serif;
+		margin: 100px auto;
+		padding: 10px 50px;
+		background-color: #ed1c24;
+		animation: pasha 3s ease-in-out 2s forwards;
+		border-radius: 10px;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+		}
+
+	@keyframes pasha {
+	0% {
+		transform: translateY(100%) scale(0.3); opacity:0;
+	}
+	100% {
+		transform: translateY(40%) scale(1); opacity:1;
+	}
+	}
+	</style>
+
+	

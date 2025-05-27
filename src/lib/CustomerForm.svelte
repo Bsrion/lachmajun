@@ -1,5 +1,6 @@
 <script>
 	import { createEventDispatcher } from 'svelte';
+	import {fade, scale } from 'svelte/transition';
 
 	const dispatch = createEventDispatcher();
 
@@ -7,6 +8,8 @@
 
 	let message = $state('');
 	let errorDetails = $state('');
+
+	
 
 	let formData = $state({
 		firstName: '',
@@ -59,13 +62,19 @@
 			errorDetails = err.message;
 			message = 'שגיאה בשליחת הטופס';
 		}
-	}
-</script>
-<div class="form-wrapper">
-	<h2>טופס לקוח חדש / עדכון / עריכה</h2>
-			<button type="button" onclick={() => dispatch('cancel')}>❌ סגור ללא שמירה</button>
+	};
+	// scroll in the table with arrows
 
-<form onsubmit={handleSubmit} class="form-container" aria-label="Customer Form">
+</script>
+<div class="form-wrapper" out:scale={{ duration: 350, easing: t => t * t }} in:scale={{ duration: 350, delay: 50, easing: t => t * t }}>
+		<button type="button" onclick={() => dispatch('cancel')} class="close-btn">❌ &nbsp סגור ללא שמירה</button>
+	<h2>טופס לקוח חדש / עדכון / עריכה</h2>
+			<br>
+			<button type="button" onclick={() => dispatch('cancel')} class="close-btn">❌ &nbsp סגור ללא שמירה</button>
+
+<form 	
+
+		onsubmit={handleSubmit} class="form-container" aria-label="Customer Form">
 
 	<label>
 		<span>שם פרטי *</span>
@@ -132,6 +141,7 @@
 		background: #ffffff;
 		border-radius: 12px;
 		box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		position: relative;
 	}
 	.form-container {
 		display: grid;
@@ -224,6 +234,19 @@ background: #ffffff;
 		background: #fcebea;
 		padding: 0.5rem;
 		border-radius: 5px;
+	}
+	.close-btn {
+		position: absolute;
+		top: 5%;
+		right: 5%;
+		width: fit-content;
+		background: none;
+		border: none;
+		font-size: 0.75rem;
+		cursor: pointer;
+		color: #e74c3c;
+		background-color: #f2f2f2;
+		box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 	}
 	@media screen and (max-width:550px){
 .form-container {

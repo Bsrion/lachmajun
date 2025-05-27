@@ -27,19 +27,19 @@ onMount(() => {
 <div class="nav">
     <nav>
         {#if comperDiv < 15}
-         <img src=/logo.svg alt="Logo" style="width: 150px; height: 150px; position: fixed; top: -10px; left: 30px; z-index: 3000;">
         <ul out:fly={{ y: -50, duration: 350, delay: 50 }}>
+            <img src=/logo.svg alt="Logo" style="width: 175px; height: 175px; position: fixed; top: -10px; left: 30px; z-index: 3000;" in:fly={{ y: -50, duration: 500, delay: 150, easing:cubicOut}}>
             <li in:fly={{ y: -50, duration: 500, delay: 150, easing:cubicOut}}><a href="/">בית</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 200, easing:cubicOut}}><a href="/Neworder">פתיחת הזמנות</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 250, easing:cubicOut}}><a href="/contact">הזמנות שנקלטו</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 300, easing:cubicOut}}><a href="/customersIndex">אינדקס לקוחות</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 350, easing:cubicOut}}><a href="/allCustomers">לקוחות קיימים</a></li>
-            <li in:fly={{ y: -50, duration: 500, delay: 400, easing:cubicOut}}><a href="/blog">Blog</a></li>
+            <li in:fly={{ y: -50, duration: 500, delay: 400, easing:cubicOut}}><a href="/production">הוראות ייצור</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 450, easing:cubicOut}}><a href="/test">Test</a></li>
         </ul>
         {:else}
         <ul out:fly={{ y: 35, duration: 150,  }} in:fly={{ y: 35, duration: 300, delay: 400 }}>
-            <li><a href="/"><img src="/src/assets/burger-menu-right-svgrepo-com.svg" alt="Burger menu icon" style="width:30px; height:30px;">
+            <li><a href="/"><img src="/src/assets/burger-menu-right-svgrepo-com.svg" alt="Burger menu icon" style="width:25px; height:25px;">
 </a></li>
            
         </ul>
@@ -59,9 +59,9 @@ li {
     /* isolation: isolate; */
 }
 li a {
-    font-size: clamp(1rem, 1.5vw, 1.5rem);
+    font-size: clamp(0.7rem, 1.5vw, 1.1rem);
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 400;
     color: rgb(35, 35, 35);
     transition: color 0.3s ease, transform 0.3s ease;
 }
@@ -83,14 +83,19 @@ nav {
     top: 0;
     left: 0;
     right: 0;
-    padding-top: 30px;
-    height: 30px;
+    padding: 12px 0;
+    height: 20px;
     max-height: 100px;
     /* mix-blend-mode: difference;  💥 this makes the whole nav blend */
     color: white;
     user-select: none;
     background-color: white;
     z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease, height 0.3s ease;
+
+    overflow: hidden;
+    flex-wrap: nowrap;
 
 }
 ul{

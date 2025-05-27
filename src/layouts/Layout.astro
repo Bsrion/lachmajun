@@ -16,6 +16,9 @@ import "../styles/global.css";
 	<body>
 
 		<slot />
+					<footer class="copyright">
+				&copy; {new Date().getFullYear()} | Lachmajun All rights reserved
+			</footer>
 	</body>
 </html>
 
@@ -28,9 +31,23 @@ import "../styles/global.css";
 
     
 	}
-	body{
-	width: 100%;
     /* background-image: linear-gradient(to bottom, #cacaca, #000000); */
     /* background-size: cover; */
+	body {
+		background-color: #f0f0f0;
+		font-family: 'Arial', sans-serif;
+	width: 100%;
+	
+	}
+	footer {
+		text-align: center;
+		font-size: 0.8rem;
+		letter-spacing: 2px;
+		padding: 1rem;
+		background-color: #333;
+		color: white;
+		position: fixed;
+		bottom: 0;
+		width: 100%;
 	}
 </style>
