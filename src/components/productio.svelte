@@ -20,24 +20,44 @@
 {:else if products.length === 0}
   <p>Loading products...</p>
 {:else}
-  <table>
-    <thead>
-      <tr>
-        <th>Product ID</th>
-        <th>Category</th>
-        <th>Hebrew Name</th>
-        <th>Arabic Name</th>
-        <th>Comments</th>
+  <table style="margin: 120px 20px">
+    <thead style="height: 75px">
+      <tr >
+        <th> ID</th>
+        <th> name</th>
+        <th> name_arabic</th>
+        <th> ion_instraction</th>
+        <th> category</th>
+        <th> emtsa_shavua_1</th>
+        <th> emtsa_shavua_2</th>
+        <th> seudat_mitsva_1</th>
+        <th> seudat_mitsva_2</th>
+        <th> keytering_leshabat_chatan_erev</th>
+        <th> keytering_leshabat_chatan_yom</th>
+        <th> keytering_leseuda_shelishit</th>
+        <th> chatifim</th>
+        <th> sensitiviti</th>
+        <th> comment</th>
       </tr>
     </thead>
     <tbody>
       {#each products as product}
         <tr>
           <td>{product.product_id}</td>
-          <td>{product.category}</td>
-          <td>{product.heb_name}</td>
-          <td>{product.arabic_name}</td>
-          <td>{product.comments || '-'}</td>
+          <td>{product.name}</td>
+          <td>{product.name_arabic  || ''}</td>
+          <td>{product.production_instraction || '-'}</td>
+          <td>{product.category || '-'}</td>
+          <td>{product.emtsa_shavua_1 || ''}</td>
+          <td>{product.emtsa_shavua_2	 || '-'}</td>
+          <td>{product.seudat_mitsva_1 || '-'}</td>
+          <td>{product.seudat_mitsva_2 || '-'}</td>
+          <td>{product.keytering_leshabat_chatan_erev || '-'}</td>
+          <td>{product.keytering_leshabat_chatan_yom|| '-'}</td>
+          <td>{product.keytering_leseuda_shelishit || '-'}</td>
+          <td>{product.chatifim || '-'}</td>
+          <td>{product.sensitiviti || '-'}</td>
+          <td>{product.comment || '-'}</td>
         </tr>
       {/each}
     </tbody>
