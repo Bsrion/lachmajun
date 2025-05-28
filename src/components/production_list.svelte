@@ -4,6 +4,34 @@
   let products = $state([]);
   let error = $state(null);
   let editingRow = $state(null); // Track currently editing row
+// sorting code
+
+let sortKey = $state(null);
+let sortDirection = $state('asc'); // 'asc' or 'desc'
+
+function sortBy(key) {
+  if (sortKey === key) {
+    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortKey = key;
+    sortDirection = 'asc';
+  }
+
+  products = [...products].sort((a, b) => {
+    const aVal = a[key] || '';
+    const bVal = b[key] || '';
+
+    if (!isNaN(aVal) && !isNaN(bVal)) {
+      return sortDirection === 'asc'
+        ? aVal - bVal
+        : bVal - aVal;
+    }
+
+    return sortDirection === 'asc'
+      ? String(aVal).localeCompare(String(bVal))
+      : String(bVal).localeCompare(String(aVal));
+  });
+}
 
   onMount(async () => {
     try {
@@ -53,6 +81,63 @@
   function handleInputChange(index, key, value) {
     products[index][key] = value;
   }
+
+  // add or remove raws of products
+function addProduct() {
+  const emptyProduct = {
+    product_id: '', // leave empty for auto ID
+    name: '',
+    name_arabic: '',
+    production_instraction: '',
+    category: '',
+    emtsa_shavua_1: false,
+    emtsa_shavua_2: false,
+    seudat_mitsva_1: false,
+    seudat_mitsva_2: false,
+    keytering_leshabat_chatan_erev: false,
+    keytering_leshabat_chatan_yom: false,
+    keytering_leseuda_shelishit: false,
+    chatifim: false,
+    sensitiviti: false,
+    comment: ''
+  };
+
+  products = [...products, emptyProduct];
+  editingRow = products.length - 1;
+}
+
+async function deleteProduct(index) {
+  const product = products[index];
+
+  if (!product.product_id) {
+    if (confirm("This product is not saved yet. Remove it from the list?")) {
+      products = products.filter((_, i) => i !== index);
+    }
+    return;
+  }
+
+  const confirmation = prompt(`Type the product name "${product.name}" to confirm deletion:`);
+
+  if (confirmation !== product.name) {
+    alert("Deletion cancelled. Name didn't match.");
+    return;
+  }
+
+  try {
+    const res = await fetch('https://dilen-digital.co.il/api/delete_product.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_id: product.product_id })
+    });
+
+    if (!res.ok) throw new Error('Failed to delete product');
+    products = products.filter((_, i) => i !== index);
+  } catch (e) {
+    alert(`Delete failed: ${e.message}`);
+  }
+}
+
+
 </script>
 
 {#if error}
@@ -60,27 +145,24 @@
 {:else if products.length === 0}
   <p>Loading products...</p>
 {:else}
-<table>
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>name</th>
-      <th>name_arabic</th>
-      <th>ion_instraction</th>
-      <th>category</th>
-      <th>emtsa_shavua_1</th>
-      <th>emtsa_shavua_2</th>
-      <th>seudat_mitsva_1</th>
-      <th>seudat_mitsva_2</th>
-      <th>keytering_leshabat_chatan_erev</th>
-      <th>keytering_leshabat_chatan_yom</th>
-      <th>keytering_leseuda_shelishit</th>
-      <th>chatifim</th>
-      <th>sensitiviti</th>
-      <th>comment</th>
-      <th>Action</th>
-    </tr>
-  </thead>
+<table >
+<thead style="height: 75px">
+  <tr>
+    {#each Object.keys(products[0] || {}) as key}
+      <th
+        style="cursor: pointer; user-select: none;"
+        onclick={() => sortBy(key)}
+      >
+        {key}
+        {#if sortKey === key}
+          {sortDirection === 'asc' ? ' ↑' : ' ↓'}
+        {/if}
+      </th>
+    {/each}
+    <th>Actions</th>
+  </tr>
+</thead>
+
   <tbody>
     {#each products as product, index}
       <tr
@@ -102,8 +184,10 @@
     />
   </td>
 {/each}
-          <td><button onclick={() => saveEdit(index)}>Save</button></td>
-        {:else}
+<td>
+  <button onclick={() => saveEdit(index)}>💾 Save</button>
+  <button onclick={() => deleteProduct(index)} style="margin-left: 10px; color: red;">🗑 Delete</button>
+</td>        {:else}
           {#each Object.keys(product) as key}
             <td>{product[key]}</td>
           {/each}
@@ -114,8 +198,7 @@
   </tbody>
 </table>
 {/if}
-
-
+<button onclick={addProduct} style="margin: 0 20px 50px 0x; padding: 10px 20px">➕ Add Product</button>
 <style>
   input.nameCategoryInput {
   width: 180px;  /* bigger width */
@@ -128,7 +211,17 @@ input.smallInput {
   font-size: 0.85rem;
   padding: 5px 7px;
 }
-
+tr th.veryWideTh{
+  min-width:200px;
+}
+tr th.WideTh{
+  min-width:120px;
+}
+table tr th{
+    min-width:50px;
+    word-break: break-word;
+    text-align: right;
+}
   table {
     width: 100%;
     max-width: 1200px;
@@ -142,6 +235,7 @@ input.smallInput {
     background-color: #007acc;
     color: white;
     height: 60px;
+    white-space: normal;
   }
 
   thead th {
