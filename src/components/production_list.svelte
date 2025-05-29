@@ -88,6 +88,9 @@ function addProduct() {
     product_id: '', // leave empty for auto ID
     name: '',
     name_arabic: '',
+    above_25: '',
+    less_than_25: '',
+    name_arabic: '',
     production_instraction: '',
     category: '',
     emtsa_shavua_1: false,
@@ -146,7 +149,7 @@ async function deleteProduct(index) {
   <p>Loading products...</p>
 {:else}
 <table >
-<thead style="height: 75px">
+<thead style="position: sticky; top: 40px; background: white; z-index: 10; height: 75px padding:10px 0;">
   <tr>
     {#each Object.keys(products[0] || {}) as key}
       <th
@@ -162,6 +165,7 @@ async function deleteProduct(index) {
     <th>Actions</th>
   </tr>
 </thead>
+
 
   <tbody>
     {#each products as product, index}
@@ -184,9 +188,9 @@ async function deleteProduct(index) {
     />
   </td>
 {/each}
-<td>
-  <button onclick={() => saveEdit(index)}>💾 Save</button>
-  <button onclick={() => deleteProduct(index)} style="margin-left: 10px; color: red;">🗑 Delete</button>
+<td style="display:flex; gap:5px">
+  <button onclick={() => saveEdit(index)} style="margin-left: 10px; color: yellow; line-height:20px">💾 שמור</button>
+  <button onclick={() => deleteProduct(index)} style="margin-left: 10px; color: pink; line-height:20px">🗑 מחק</button>
 </td>        {:else}
           {#each Object.keys(product) as key}
             <td>{product[key]}</td>
@@ -223,9 +227,10 @@ table tr th{
     text-align: right;
 }
   table {
-    width: 100%;
-    max-width: 1200px;
-    margin: 120px 20px;
+    width: 95vw;
+    max-width: 1720;
+    margin: 120px auto;
+    padding: clamp(20px, 2vw, 100px);
     border-collapse: collapse;
     font-family: Arial, sans-serif;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);

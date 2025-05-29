@@ -67,7 +67,6 @@ let products = $state([]);
       const res = await fetch('https://dilen-digital.co.il/api/production.php');
       if (!res.ok) throw new Error('Failed to fetch products');
       products = await res.json();
-      console.log('Products loaded:', products);
     } catch (e) {
       error = e.message;
     }
@@ -426,7 +425,6 @@ let showcustomersForm = $state(false);
     on:dateOrTimeChange={(e) => {
     customer.dateOfSuplay = e.detail.date;
     customer.houerOfSuplay = e.detail.time;
-    console.log(customer.dateOfSuplay, customer.houerOfSuplay)
   }}
 />
 
