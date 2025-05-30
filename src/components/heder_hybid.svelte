@@ -28,14 +28,14 @@ onMount(() => {
     <nav>
         {#if comperDiv < 15}
         <ul out:fly={{ y: -50, duration: 350, delay: 50 }}>
-            <img src=/logo.svg alt="Logo" style="width: 175px; height: 175px; position: fixed; top: -10px; left: 30px; z-index: 3000;" in:fly={{ y: -50, duration: 500, delay: 150, easing:cubicOut}}>
+            <img src=/logo.svg alt="Logo" style="width: 175px; height: 175px; position: fixed; top: -30px; left: 30px; z-index: 3000;" in:fly={{ y: -50, duration: 500, delay: 150, easing:cubicOut}}>
             <li in:fly={{ y: -50, duration: 500, delay: 150, easing:cubicOut}}><a href="/">בית</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 200, easing:cubicOut}}><a href="/Neworder">פתיחת הזמנות</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 250, easing:cubicOut}}><a href="/contact">הזמנות שנקלטו</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 300, easing:cubicOut}}><a href="/customersIndex">אינדקס לקוחות</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 350, easing:cubicOut}}><a href="/allCustomers">לקוחות קיימים</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 400, easing:cubicOut}}><a href="/production">הוראות ייצור</a></li>
-            <li in:fly={{ y: -50, duration: 500, delay: 450, easing:cubicOut}}><a href="/test">Test</a></li>
+            <li in:fly={{ y: -50, duration: 500, delay: 450, easing:cubicOut}}><a href="/salad_quantity">סלט-כמויות</a></li>
         </ul>
         {:else}
         <ul out:fly={{ y: 35, duration: 150,  }} in:fly={{ y: 35, duration: 300, delay: 400 }}>

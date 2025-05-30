@@ -1,0 +1,12 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Heder_hybid from '../components/heder_hybid.svelte';
+import "../styles/global.css";
+import Salad_quantity from '../components/salad_quantity.svelte';
+---
+
+<Layout>
+<Heder_hybid client:visible />
+<Salad_quantity client:load />
+
+</Layout>

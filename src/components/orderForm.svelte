@@ -428,7 +428,7 @@ let showcustomersForm = $state(false);
   }}
 />
 
-<Tafritim  on:MachirMana = {(data)=>customer.orderBasePrice = data.detail}/>
+<Tafritim  on:MachirMana = {(data)=>customer.orderBasePrice = data.detail} bind:numberOfPuple = {customer.numOfSets}/>
 
   {#if customer.orderDay && !warning}
     <span class="lachmajun-hebrew-day">יום {customer.orderDay}</span>
