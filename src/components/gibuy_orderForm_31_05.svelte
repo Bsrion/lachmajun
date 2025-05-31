@@ -32,8 +32,8 @@ import Tafritim from '../components/tafritim.svelte'
     orderDate: null,
     orderTime: null,
     orderType: null,
-    numOfSets: 1,
-    orderBasePrice: null,
+    numOfSets: null,
+    orderBasePrice: 79,
     orderDeliveryPrice: null,
     // orderTotalPrice: 0,
     orderItems: [],
@@ -46,7 +46,6 @@ import Tafritim from '../components/tafritim.svelte'
   let orderDelveryFullAdd = $derived(customer.deliveryPlace + ' ' + customer.deliveryPlaceNumber + ', ' + customer.deliveryCity + ' - ' + customer.deliveryPlaceNote)  ;
   let showDeliveryInputs = $state(false);
   let SelectedTafrit = $state('TafritHofshi');
-  let tafritimFixedPrice = $state(null);
 
   let showInputs = $state(false);
   const optionsByCategory = {
@@ -190,6 +189,7 @@ function maybeAddNewRow(item) {
   let suggestionRefs = $state([]);
   let warning = $state('');
 
+
 async function onNameInput() {
   const input = customer.name.trim();
   selectedIndex = -1;
@@ -257,7 +257,7 @@ function selectCustomer(cust) {
   customer = {
     ...customer,
     ...cust,
-    name: `${cust.firstName} ${cust.lastName} - ${cust.phone} - ${cust.address}` // optional, for display only
+    name: `${cust.firstName} ${cust.lastName} - ${cust.phone} - ${cust.address}` // optional, for display onlyß
   };
   nameSuggestions = [];
   showNewUserPrompt = false;n
@@ -430,14 +430,7 @@ let showcustomersForm = $state(false);
   }}
 />
 
-<Tafritim
-  on:MachirMana={(data) => {
-    customer.orderBasePrice = data.detail.price;
-    SelectedTafrit = data.detail.sugTafrit;
-    customer.numOfSets = data.detail.numberOfPuple;
-    tafritimFixedPrice = data.detail.price; // Add this line!
-  }}
-/>
+<Tafritim  on:MachirMana = {(data)=>{customer.orderBasePrice = data.detail; SelectedTafrit = data.detail.sugTafrit}} bind:numberOfPuple = {customer.numOfSets} />
 
   {#if customer.orderDay && !warning}
     <span class="lachmajun-hebrew-day">יום {customer.orderDay}</span>
@@ -450,58 +443,126 @@ let showcustomersForm = $state(false);
         </div>
   </div>
 </div>
+<!-- show or hide tafrit chofshi on radio btn change -->
+<!-- {#if SelectedTafrit = 'TafritHofshi'} -->
+  {#each [...new Set(orderItems.map(i => i.category))] as category}
+    <h2>{category}</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>פריט</th>
+          <th>כמות</th>
+          <th>סה״כ</th>
+          <th>הערות</th>
+          <th>נקה</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each orderItems.filter(i => i.category === category) as item, index}
+          <tr class:orderdItem={item.quantity > 0} in:fly={{duration:350, y:-100}} out:slide={{duration:300}}>
+                <td><select bind:value={item.name}>
+                    <option value="" disabled>בחר</option>
+                    {#each optionsByCategory[item.category] ?? [] as opt}
+                      <option value={opt}>{opt}</option>
+                    {/each}
 
-
-
-<!-- sum acount section -->
-
-<div class="sumAcount">
-  <label class="sumLabel">אוכל חם / קר:</label>
-  <div class="radio-group">
-    <label class="radio-option">
-      <input type="radio" name="hotOrCold" bind:group={customer.hotOrCold} value="חם" />
-      <span>חם</span>
-    </label>
-    <label class="radio-option">
-      <input type="radio" name="hotOrCold" bind:group={customer.hotOrCold} value="קר" />
-      <span>קר</span>
-    </label>
-  </div>
-
-  <label class="sumLabel">כמות אנשים:</label>
-  <input class="sumInput" type="number" bind:value={customer.numOfSets} min="1" placeholder="כמות מנות" />
-
-<label class="sumLabel" for="orderBasePriceInput">מחיר למנה:</label>
-<div class="input-warning-wrap">
-  <input
-    id="orderBasePriceInput"
-    class="sumInput"
-    type="number"
-    bind:value={customer.orderBasePrice}
-    placeholder="מחיר למנה"
-    style:border-color={tafritimFixedPrice !== null && customer.orderBasePrice != tafritimFixedPrice ? 'red' : ''}
-    style:background={tafritimFixedPrice !== null && customer.orderBasePrice != tafritimFixedPrice ? '#ffeaea' : ''}
-  />
-  {#if tafritimFixedPrice !== null && customer.orderBasePrice != tafritimFixedPrice}
-    <span class="input-warning">
-      מחיר זה שונה מהמחיר הקבוע של התפריט ({tafritimFixedPrice} ש"ח)
-    </span>
+  <!-- Show custom name if it's not already in the list -->
+  {#if item.name && !optionsByCategory[item.category]?.includes(item.name)}
+    <option value={item.name}>{item.name}</option>
   {/if}
+
+  <option value="אחר">אחר</option>
+</select>
+
+{#if item.name === 'אחר'}
+  <input
+    type="text"
+    placeholder="הקלד שם פריט"
+    bind:value={item.customName}
+    onkeydown={(e) => {
+      if (e.key === 'Enter' && item.customName.trim()) {
+        item.name = item.customName.trim();
+        item.customName = '';
+      }
+    }}
+    onblur={() => {
+      if (item.customName.trim()) {
+        item.name = item.customName.trim();
+        item.customName = '';
+      }
+    }}
+  />
+{/if}
+
+
+</td>
+            <td>
+              <input type="number" min="0" bind:value={item.quantity} />
+            </td>
+            <td>
+              <input type="number" min="" bind:value={item.amount} />
+            </td>
+            <td>
+              <input type="text" bind:value={item.comment} placeholder="הערות" />
+            </td>
+            <td>
+              <!-- <button onclick={(index) => {orderItems.splice(index, 1); }} >נקה פריט</button> -->
+<button
+        onclick={() => {
+          // find the real index of this item in the full array
+          const globalIdx = orderItems.findIndex(i => i === item);
+          if(index === 0) {
+            orderItems[globalIdx].name = '';
+            orderItems[globalIdx].quantity = null;
+            orderItems[globalIdx].amount = null;
+          } else if(index > 0) {
+            orderItems.splice(globalIdx, 1);   // remove it
+            orderItems = [...orderItems];      // force-reactivity
+          }
+        }} style="width: 100%; padding: 5px; background-color: #ffcccc; color: #b30000; border: none; border-radius: 5px;">
+        {index + 1} - נקה פריט
+      </button></td>
+      {#if orderItems.filter(i => i.category === category).length === index + 1}
+            <td style = "border:none">
+              <button onclick={()=>{
+                  orderItems.push({ category: item.category, name: '', quantity: null, amount: null, comment: '', options: optionsByCategory[item.category] });
+              }} >הוסף פריט</button>
+            </td>
+          {/if}
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  {/each}
+<!-- {/if} -->
+<div class="sumAcount">
+  <label>אוכל חם / קר</label>  <div>
+
+  <label>חם
+  <input type=radio name="hotOrCold" bind:group={customer.hotOrCold} value="חם"/></label>
+  <label>קר
+  <input type=radio name="hotOrCold" bind:group={customer.hotOrCold} value="קר"/></label>
 </div>
+  <label>כמות אנשים:</label>
+  <input type="number" bind:value={customer.numOfSets} min="1"placeholder="כמות מנות:" />
+    <label>מחיר למנה :</label>
+  <input type="number" bind:value={customer.orderBasePrice}  placeholder="מחיר למנה" />
+    <label>סה״כ לתשלום :</label>
 
-  <label class="sumLabel">סה״כ לתשלום:</label>
-  <input class="sumInput" type="number" bind:value={orderPrice} placeholder="סה״כ לתשלום" readonly />
+  <input type="number" bind:value={orderPrice} placeholder="סה״כ לתשלום" readonly/>
+    <label>עלות משלוח :</label>
 
-  <label class="sumLabel">עלות משלוח:</label>
-  <input class="sumInput" type="number" bind:value={customer.orderDeliveryPrice} min="0" placeholder="עלות משלוח" />
+  <input type="number" bind:value={customer.orderDeliveryPrice}   min="0" placeholder="עלות משלוח" />
+    <label>סה״כ כולל משלוח :</label>
 
-  <label class="sumLabel">סה״כ כולל משלוח:</label>
-  <input class="sumInput" type="number" bind:value={orderTotalPrice} placeholder="סה״כ כולל משלוח" readonly />
+  <input type="number" bind:value={orderTotalPrice} placeholder="סה״כ כולל משלוח" readonly/>
 
-  <label class="sumLabel" style="grid-column: 1/3;">הערות:</label>
-  <textarea class="sumTextarea" bind:value={customer.comments} style="grid-column: 1/3;" rows="2" placeholder="הערות"></textarea>
+
+<!-- not working --- not working -->
+
+  <label>הערות:</label>
+  <textarea bind:value={customer.comments}></textarea>
 </div>
-
   <div class="buttons">
     {#if customer.dateOfSuplay && customer.houerOfSuplay && customer.deliveryPlace}
     <button onclick={sendOrder}>שמור הזמנה </button>
@@ -554,88 +615,6 @@ let showcustomersForm = $state(false);
   </div>
 
 <style>
-  .input-warning-wrap{
-    position: relative;
-  }
-.input-warning{
-  position: absolute;
-  top:50%;
-  left: 33%;
-  transform: translateY(-50%);
-  font-size: 0.85rem;
-  color: #b30000;
-}
-
-.sumAcount {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  align-items: center;
-  gap: 12px 16px;
-  margin: 20px 0 35px 0;
-  padding: 18px 16px 12px 16px;
-  background: #fafbfc;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  direction: rtl;
-  font-family: inherit;
-  font-size: 1.09em;
-}
-
-.sumLabel {
-  color: #222;
-  font-weight: bold;
-  margin-bottom: 0.15em;
-  letter-spacing: 0.04em;
-}
-
-.sumInput {
-  width: 85%;
-  min-width: 95px;
-  font-size: 1em;
-  padding: 7px 10px;
-  margin: 2px 0;
-  border: 1.5px solid #ccc;
-  border-radius: 5px;
-  background: #fff;
-  transition: border-color 0.18s;
-}
-.sumInput:focus {
-  border-color: #007acc;
-  outline: none;
-  background: #f8fbff;
-}
-
-.sumTextarea {
-  width: 99%;
-  min-width: 120px;
-  padding: 7px 12px;
-  border: 1.5px solid #ccc;
-  border-radius: 5px;
-  background: #fff;
-  font-size: 1em;
-  resize: vertical;
-  margin-bottom: 0.3em;
-}
-
-.radio-group {
-  display: flex;
-  gap: 24px;
-  align-items: center;
-}
-
-.radio-option {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-weight: normal;
-  font-size: 1em;
-}
-
-.radio-option input[type="radio"] {
-  accent-color: #007acc;
-  margin-left: 4px;
-  cursor: pointer;
-}
 
   .form-container {
     max-width:1200px;

@@ -1,296 +1,301 @@
 <script>
-   import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
 
   let products = $state([]);
-  let error = $state(null);
-  let editingRow = $state(null); // Track currently editing row
-// sorting code
+  let editingRow = $state(null); // Holds product_id or temp_id
+  let sortKey = $state('product_id');
+  let sortAsc = $state(true);
 
-let sortKey = $state(null);
-let sortDirection = $state('asc'); // 'asc' or 'desc'
+  let isRowClick = $state(false);
 
-function sortBy(key) {
-  if (sortKey === key) {
-    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortKey = key;
-    sortDirection = 'asc';
+  // Fetch products from API
+  async function fetchProducts() {
+    const res = await fetch('https://dilen-digital.co.il/api/production.php');
+    products = await res.json();
+    sortTable(sortKey, true);
   }
 
-  products = [...products].sort((a, b) => {
-    const aVal = a[key] || '';
-    const bVal = b[key] || '';
-
-    if (!isNaN(aVal) && !isNaN(bVal)) {
-      return sortDirection === 'asc'
-        ? aVal - bVal
-        : bVal - aVal;
+  // Sorting logic
+  function sortTable(key, forceAsc = false) {
+    if (sortKey === key && !forceAsc) {
+      sortAsc = !sortAsc;
+    } else {
+      sortKey = key;
+      sortAsc = true;
     }
+    products = [...products].sort((a, b) => {
+      let aVal = a[key] ?? '';
+      let bVal = b[key] ?? '';
+      if (!isNaN(aVal) && !isNaN(bVal)) {
+        aVal = +aVal; bVal = +bVal;
+      }
+      if (aVal === bVal) return 0;
+      return sortAsc ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
+    });
+  }
 
-    return sortDirection === 'asc'
-      ? String(aVal).localeCompare(String(bVal))
-      : String(bVal).localeCompare(String(aVal));
-  });
-}
+  // Handle edit row
+  function editRow(row) {
+    editingRow = row.product_id || row.temp_id;
+  }
 
-  onMount(async () => {
-    try {
-      const res = await fetch('https://dilen-digital.co.il/api/production.php');
-      if (!res.ok) throw new Error('Failed to fetch products');
-      products = await res.json();
-    } catch (e) {
-      error = e.message;
-    }
-
-    // quit edit mode when clickig out from the raw
-
-      const handleClick = (e) => {
-    if (
-      editingRow !== null &&
-      !e.target.closest('tr[tabindex="0"]') // Clicked outside the row
-    ) {
+  function onRowClick(row) {
+    if (editingRow === (row.product_id || row.temp_id)) {
+      isRowClick = true;
+    } else {
       editingRow = null;
     }
-  };
-
-  document.addEventListener('click', handleClick);
-  return () => document.removeEventListener('click', handleClick);
-  });
-
-  function startEdit(index) {
-    editingRow = index;
   }
 
-  async function saveEdit(index) {
-    const updatedProduct = products[index];
-
-    try {
-      const res = await fetch('https://dilen-digital.co.il/api/update_product.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedProduct),
-      });
-
-      if (!res.ok) throw new Error('Failed to update product');
-      editingRow = null;
-    } catch (e) {
-      alert(`Save failed: ${e.message}`);
-    }
-  }
-
-  function handleInputChange(index, key, value) {
-    products[index][key] = value;
-  }
-
-  // add or remove raws of products
-function addProduct() {
-  const emptyProduct = {
-    product_id: '', // leave empty for auto ID
-    name: '',
-    name_arabic: '',
-    above_25: '',
-    less_than_25: '',
-    name_arabic: '',
-    production_instraction: '',
-    category: '',
-    emtsa_shavua_1: false,
-    emtsa_shavua_2: false,
-    seudat_mitsva_1: false,
-    seudat_mitsva_2: false,
-    keytering_leshabat_chatan_erev: false,
-    keytering_leshabat_chatan_yom: false,
-    keytering_leseuda_shelishit: false,
-    chatifim: false,
-    sensitiviti: false,
-    comment: ''
-  };
-
-  products = [...products, emptyProduct];
-  editingRow = products.length - 1;
-}
-
-async function deleteProduct(index) {
-  const product = products[index];
-
-  if (!product.product_id) {
-    if (confirm("This product is not saved yet. Remove it from the list?")) {
-      products = products.filter((_, i) => i !== index);
-    }
-    return;
-  }
-
-  const confirmation = prompt(`Type the product name "${product.name}" to confirm deletion:`);
-
-  if (confirmation !== product.name) {
-    alert("Deletion cancelled. Name didn't match.");
-    return;
-  }
-
-  try {
-    const res = await fetch('https://dilen-digital.co.il/api/delete_product.php', {
+  // Save edited or new row
+  async function saveRow(row) {
+    let saveUrl = row.product_id
+      ? 'https://dilen-digital.co.il/api/update_product.php'
+      : 'https://dilen-digital.co.il/api/add_product.php';
+    let saveRow = { ...row };
+    if (!saveRow.product_id) delete saveRow.product_id;
+    await fetch(saveUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ product_id: product.product_id })
+      body: JSON.stringify(saveRow)
     });
-
-    if (!res.ok) throw new Error('Failed to delete product');
-    products = products.filter((_, i) => i !== index);
-  } catch (e) {
-    alert(`Delete failed: ${e.message}`);
+    editingRow = null;
+    await fetchProducts();
   }
-}
 
+  function cancelEdit() {
+    editingRow = null;
+    fetchProducts(); // Restore original values if cancelled
+  }
 
+  // Add product logic
+  function addProduct() {
+    if (products.length > 0) {
+      const last = products[products.length - 1];
+      if (!last.name?.trim() || !last.category?.trim()) {
+        alert('נא למלא שם מוצר וקטגוריה לפני שמוסיפים מוצר חדש');
+        return;
+      }
+    }
+    const emptyProduct = {
+      temp_id: `temp_${Date.now()}`,
+      product_id: '',
+      name: '',
+      name_arabic: '',
+      above_25: '',
+      less_than_25: '',
+      production_instraction: '',
+      category: '',
+      emtsa_shavua_1: false,
+      emtsa_shavua_2: false,
+      seudat_mitsva_1: false,
+      seudat_mitsva_2: false,
+      keytering_leshabat_chatan_erev: false,
+      keytering_leshabat_chatan_yom: false,
+      keytering_leseuda_shelishit: false,
+      chatifim: false,
+      sensitiviti: false,
+      comment: ''
+    };
+    products = [...products, emptyProduct];
+    editingRow = emptyProduct.temp_id;
+  }
+
+  // Delete row logic
+  async function deleteRow(row) {
+    if (!row.product_id) {
+      if (confirm("This product is not saved yet. Remove it from the list?")) {
+        products = products.filter(r => (r.product_id || r.temp_id) !== (row.product_id || row.temp_id));
+      }
+      return;
+    }
+    const confirmation = prompt(`Type the product name "${row.name}" to confirm deletion:`);
+    if (confirmation !== row.name) {
+      alert("Deletion cancelled. Name didn't match.");
+      return;
+    }
+    await fetch('https://dilen-digital.co.il/api/delete_product.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_id: row.product_id })
+    });
+    products = products.filter(r => r.product_id !== row.product_id);
+  }
+
+  // Handle click outside editable row to close edit mode
+  function handleClickOutside() {
+    if (!isRowClick) {
+      editingRow = null;
+    }
+    isRowClick = false;
+  }
+
+  onMount(() => {
+    fetchProducts();
+    window.addEventListener('click', handleClickOutside);
+  });
+  onDestroy(() => {
+    window.removeEventListener('click', handleClickOutside);
+  });
 </script>
 
-{#if error}
-  <p style="color:red">{error}</p>
-{:else if products.length === 0}
-  <p>Loading products...</p>
-{:else}
-<table >
-<thead style="position: sticky; top: 40px; background: white; z-index: 10; height: 75px padding:10px 0;">
-  <tr>
-    {#each Object.keys(products[0] || {}) as key}
-      <th
-        style="cursor: pointer; user-select: none;"
-        onclick={() => sortBy(key)}
-      >
-        {key}
-        {#if sortKey === key}
-          {sortDirection === 'asc' ? ' ↑' : ' ↓'}
-        {/if}
-      </th>
-    {/each}
-    <th>Actions</th>
-  </tr>
-</thead>
-
-
-  <tbody>
-    {#each products as product, index}
-      <tr
-        ondblclick={() => startEdit(index)}
-        onkeydown={(e) => {
-          if (e.key === 'Escape') editingRow = null;
-        }}
-        tabindex="0"
-      >
-        {#if editingRow === index}
-        {#each Object.keys(product) as key}
-  <td>
-    <input
-      type="text"
-      bind:value={products[index][key]}
-      oninput={(e) => handleInputChange(index, key, e.target.value)}
-      class:nameCategoryInput={key === 'name' || key === 'category'}
-      class:smallInput={key !== 'name' && key !== 'category'}
-    />
-  </td>
-{/each}
-<td style="display:flex; gap:5px">
-  <button onclick={() => saveEdit(index)} style="margin-left: 10px; color: yellow; line-height:20px">💾 שמור</button>
-  <button onclick={() => deleteProduct(index)} style="margin-left: 10px; color: pink; line-height:20px">🗑 מחק</button>
-</td>        {:else}
-          {#each Object.keys(product) as key}
-            <td>{product[key]}</td>
-          {/each}
-          <td></td>
-        {/if}
+{#if products.length}
+  <table>
+    <thead>
+      <tr>
+        <th onclick={() => sortTable('product_id')}>מס' מזהה</th>
+        <th onclick={() => sortTable('name')}>שם מוצר</th>
+        <th onclick={() => sortTable('name_arabic')}>שם בערבית</th>
+        <th onclick={() => sortTable('category')}>קטגוריה</th>
+        <th onclick={() => sortTable('less_than_25')}>פחות מ-25</th>
+        <th onclick={() => sortTable('above_25')}>מעל 25</th>
+        <th onclick={() => sortTable('production_instraction')}>הוראת ייצור</th>
+        <th onclick={() => sortTable('comment')}>הערות</th>
+        <th></th>
       </tr>
-    {/each}
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      {#each products as row (row.product_id || row.temp_id)}
+        <tr
+          class:editing={editingRow === (row.product_id || row.temp_id)}
+          ondblclick={() => editRow(row)}
+          onclick={() => onRowClick(row)}
+        >
+          {#if editingRow === (row.product_id || row.temp_id)}
+            <td>{row.product_id}</td>
+            <td>
+              <input type="text" bind:value={row.name} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <input type="text" bind:value={row.name_arabic} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <input type="text" bind:value={row.category} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <input type="text" bind:value={row.less_than_25} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <input type="text" bind:value={row.above_25} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <input type="text" bind:value={row.production_instraction} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <input type="text" bind:value={row.comment} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button onclick={() => { isRowClick = true; saveRow(row); }}>שמור</button>
+                <button class="cancel" onclick={() => { isRowClick = true; cancelEdit(); }}>בטל</button>
+                <button class="delete" onclick={() => { isRowClick = true; deleteRow(row); }}>מחק</button>
+              </div>
+            </td>
+          {:else}
+            <td>{row.product_id}</td>
+            <td>{row.name}</td>
+            <td>{row.name_arabic}</td>
+            <td>{row.category}</td>
+            <td>{row.less_than_25}</td>
+            <td>{row.above_25}</td>
+            <td>{row.production_instraction}</td>
+            <td>{row.comment}</td>
+            <td></td>
+          {/if}
+        </tr>
+      {/each}
+    </tbody>
+  </table>
+{:else}
+  <p>טוען נתונים...</p>
 {/if}
-<button onclick={addProduct} style="margin: 0 20px 50px 0x; padding: 10px 20px">➕ Add Product</button>
+
+<button onclick={addProduct} style="position:fixed; bottom:65px; right:35px">➕ הוסף מוצר</button>
+
 <style>
-  input.nameCategoryInput {
-  width: 180px;  /* bigger width */
-  font-size: 1.1rem;
-  padding: 8px 10px;
-}
-
-input.smallInput {
-  width: 90px;   /* smaller width */
-  font-size: 0.85rem;
-  padding: 5px 7px;
-}
-tr th.veryWideTh{
-  min-width:200px;
-}
-tr th.WideTh{
-  min-width:120px;
-}
-table tr th{
-    min-width:50px;
-    word-break: break-word;
-    text-align: right;
-}
   table {
-    width: 95vw;
-    max-width: 1720;
-    margin: 120px auto;
-    padding: clamp(20px, 2vw, 100px);
-    border-collapse: collapse;
-    font-family: Arial, sans-serif;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-
-  thead tr {
-    background-color: #007acc;
-    color: white;
-    height: 60px;
-    white-space: normal;
-  }
-
-  thead th {
-    padding: 12px 10px;
-    text-align: left;
-    font-weight: 600;
-    border-bottom: 2px solid #005fa3;
-  }
-
-  tbody tr {
-    border-bottom: 1px solid #ddd;
-    transition: background-color 0.2s ease;
-    cursor: pointer;
-  }
-
-  tbody tr:hover {
-    background-color: #f0f8ff;
-  }
-
-  tbody tr:focus {
-    outline: 2px solid #007acc;
-    background-color: #e6f2ff;
-  }
-
-  tbody td {
-    padding: 8px 10px;
-    vertical-align: middle;
-  }
-
-  input[type="text"] {
     width: 100%;
-    box-sizing: border-box;
-    padding: 6px 8px;
-    font-size: 0.95rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    border-collapse: collapse;
+    direction: rtl;
+    font-family: 'Arial', sans-serif;
+    background: #fff;
+    box-shadow: 0 2px 8px #0001;
+    margin-top: 2em;
+    margin-bottom: 5em;
   }
-
-  button {
-    background-color: #007acc;
-    border: none;
-    color: white;
-    padding: 6px 12px;
-    border-radius: 4px;
+  th, td {
+    border: 1px solid #d4d4d4;
+    padding: 0.5em 1em;
+    text-align: right;
+    background: #f7f7f7;
+    font-size: 1rem;
+  }
+  th {
     cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.3s ease;
+    background: #e9ecef;
+    user-select: none;
+    transition: background 0.2s;
   }
-
-  button:hover {
-    background-color: #005fa3;
+  th:hover {
+    background: #dde3ea;
+  }
+  tr {
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  tr.editing {
+    background: #fff3cd !important;
+  }
+  tr:nth-child(even) td {
+    background: #f2f6fa;
+  }
+  input {
+    width: 95%;
+    padding: 0.3em;
+    border: 1px solid #bdbdbd;
+    border-radius: 5px;
+    direction: rtl;
+    text-align: right;
+    font-size: 1rem;
+  }
+  .action-buttons {
+    display: flex;
+    gap: 0.5em;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+  }
+  button {
+    padding: 0.4em 1em;
+    border: none;
+    background-color: #2e7d32;
+    color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 0;
+    font-size: 1em;
+  }
+  button.cancel {
+    background-color: #d32f2f;
+  }
+  button.delete {
+    background-color: #9c27b0;
+  }
+  button:hover:not(.cancel):not(.delete) {
+    background-color: #1b5e20;
+  }
+  button.cancel:hover {
+    background-color: #b71c1c;
+  }
+  button.delete:hover {
+    background-color: #7b1fa2;
+  }
+  thead {
+    position: sticky;
+    top: 40px;
+    background: #e9ecef;
+    z-index: 10;
+    box-shadow: 0 2px 4px #0001;
+    border-bottom: 2px solid #bdbdbd;
   }
 </style>

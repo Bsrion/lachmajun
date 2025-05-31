@@ -2,11 +2,13 @@
 import Layout from '../layouts/Layout.astro';
 import Heder_hybid from '../components/heder_hybid.svelte';
 import "../styles/global.css";
-import ProductionComponent from '../components/production_list.svelte';
+import Test1 from '../components/test.svelte';
 ---
 
+
 <Layout>
+
 <Heder_hybid client:visible />
-<ProductionComponent client:only />
+<Test1 client:load />
 
 </Layout>
