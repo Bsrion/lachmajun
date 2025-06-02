@@ -24,7 +24,8 @@
   let showStreetSuggestions = $state(false);
   let focusedSuggestionIndex = $state(-1);
 
-  let cityListEl, streetListEl;
+  let cityListEl = $state();
+   let streetListEl = $state();
 
   // Load and parse CSV with streets
   async function loadStreets() {

@@ -1,34 +1,48 @@
 <script>
+  // ===============================
+  // Imports
+  // ===============================
   import { onMount } from 'svelte';
-  import { blur, crossfade, draw, fade, fly, scale, slide} from 'svelte/transition';
-  let { Tafritim : TafritProp = 'TafritHofshi'} = $props();
+  import { blur, crossfade, draw, fade, fly, scale, slide } from 'svelte/transition';
   import { createEventDispatcher } from "svelte";
-    import { Duration } from 'svelte-ux';
-    import { derived } from 'svelte/store';
-    
+  import { Duration } from 'svelte-ux';
+  import { derived } from 'svelte/store';
+
+  // ===============================
+  // Props & State Initialization
+  // ===============================
+  let { Tafritim : TafritProp = 'TafritHofshi',
+        numberOfPuple = 1,
+        selectedProducts = $bindable({}),
+        productExecutedBy = $bindable({}),
+        productQuantities = $bindable({}),
+        } = $props();
   const dispatch = createEventDispatcher();
 
   let products = $state([]);
-  let error = $state(null);
-  let selectedProducts = $state({});
-  let numberOfPuple = $state(1);
-  let productQuantities = $state({});
+  let error = $state();
+  /////
+  // let selectedProducts = $state({});
+    // let productQuantities = $state({});
+    //   let productExecutedBy = $state({});
+  /////
   let productComments = $state({});
-  let productExecutedBy = $state({});
+  let salad_quantity = $state([]);
 
-  onMount(async () =>{ 
+  // ===============================
+  // Data Fetch: Products & Salad Quantity
+  // ===============================
+  onMount(async () => { 
     try {
       const res = await fetch('https://dilen-digital.co.il/api/production.php');
       if (!res.ok) throw new Error('Failed to fetch products');
       products = await res.json();
-
     } catch (e) {
       error = e.message;
     }
   });
-  let salad_quantity = $state([]);
 
-  onMount(async () =>{ 
+  onMount(async () => { 
     try {
       const res = await fetch('https://dilen-digital.co.il/api/get_salad_quantity.php');
       if (!res.ok) throw new Error('Failed to fetch products');
@@ -38,72 +52,62 @@
     }
   });
 
-function getProductTotal(product, numberOfPuple, quantity) {
-  console.log(product, 'quantity ' + quantity, 'numberOfPuple ' + numberOfPuple)
-  if (!product) return '';
-  const numPeople = Number(numberOfPuple) || 1;
-  let perPerson = 0;
-  if (numPeople <= 25) {
-    perPerson = Number(product.less_then_25) || 0;
-  } else {
-    perPerson = Number(product.above_25) || 0;
+  // ===============================
+  // Helpers: Totals Calculation
+  // ===============================
+  function getProductTotal(product, numberOfPuple, quantity) {
+    if (!product) return '';
+    const numPeople = Number(numberOfPuple) || 1;
+    let perPerson = 0;
+    if (numPeople <= 25) perPerson = Number(product.less_then_25) || 0;
+    else perPerson = Number(product.above_25) || 0;
+    const qty = Number(quantity) || 1;
+    return (perPerson * numPeople * qty).toFixed(2);
   }
-  const qty = Number(quantity) || 1;
-  return (perPerson * numPeople * qty).toFixed(2);
-}
 
+  function getSaladTotal(product) {
+    if (!product || product.category !== 'סלטים' || !numberOfPuple || !Array.isArray(salad_quantity)) return '';
+    const row = salad_quantity.find(q => Number(q.product_id) === Number(product.product_id));
+    if (!row) return '';
+    const num = Number(numberOfPuple);
+    if (isNaN(num)) return '';
+    let col = '';
+    if (num <= 16) col = '0_16';
+    else if (num <= 26) col = '17_26';
+    else if (num <= 36) col = '27_36';
+    else if (num <= 52) col = '37_52';
+    else if (num <= 62) col = '53_62';
+    else if (num <= 72) col = '63_72';
+    else col = '73_82';
+    const val = row[col];
+    return (typeof val === 'string' && val) ? val : '';
+  }
 
+  // ===============================
+  // Tafritim (Menu Type) Logic
+  // ===============================
+  let Tafritim = $state('TafritHofshi'); // Default value
 
- function getSaladTotal(product) {
-
-  if (!product || product.category !== 'סלטים' || !numberOfPuple || !Array.isArray(salad_quantity)) return '';
-
-  const row = salad_quantity.find(q => Number(q.product_id) === Number(product.product_id));
-  if (!row) return '';
-
-  const num = Number(numberOfPuple);
-  if (isNaN(num)) return '';
-
-  let col = '';
-  if (num <= 16) col = '0_16';
-  else if (num <= 26) col = '17_26';
-  else if (num <= 36) col = '27_36';
-  else if (num <= 52) col = '37_52';
-  else if (num <= 62) col = '53_62';
-  else if (num <= 72) col = '63_72';
-  else col = '73_82';
-
-  // Return string only, fallback to empty string
-  const val = row[col];
-  return (typeof val === 'string' && val) ? val : '';
-}
-
-
-
-let Tafritim = $state('TafritHofshi'); // Default value for Tafritim
-
-  // Reactive block to update price whenever Tafritim changes
-  
  function selectTafrit(sugTafrit) {
   switch (sugTafrit) {
     case 'TafritHofshi':
-      return {price:null, sugTafrit, numberOfPuple};
+      return { price: null, sugTafrit, numberOfPuple };
 
     case 'emtsa_shavua_1':
       return {
         price: 75,
         max: {
-          סלטים: 6,
-          מנה_ראשונה: 0,
-          מנה_ראשונה_אופציה_שניה: 0,
-          ממולאים: 4,
-          ממולאים_1_לבחירה: 0,
-          עיקרית: 3,
-          עיקרית_2: 1,
-          תוספות_חמות: 3,
-          תוספות_חמות_בתוספת_תשלום: 0,
-          לחמים: 1,
-          לחמים_בתוספת_תשלום: 3
+          'סלטים': 6,
+          'מנה ראשונה': 0,
+          'מנה ראשונה אופציה שניה': 0,
+          'ממולאים': 4,
+          'ממולאים 1 לבחירה': 0,
+          'עיקרית': 3,
+          'עיקרית 2': 1,
+          'תוספות חמות': 3,
+          'תוספות חמות בתוספת תשלום': 0,
+          'לחמים': 1,
+          'לחמים בתוספת תשלום': 3
         },
         sugTafrit, numberOfPuple
       };
@@ -112,17 +116,17 @@ let Tafritim = $state('TafritHofshi'); // Default value for Tafritim
       return {
         price: 85,
         max: {
-          סלטים: 7,
-          מנה_ראשונה: 0,
-          מנה_ראשונה_אופציה_שניה: 0,
-          ממולאים: 4,
-          ממולאים_1_לבחירה: 1,
-          עיקרית: 3,
-          עיקרית_2: 0,
-          תוספות_חמות: 3,
-          תוספות_חמות_בתוספת_תשלום: 0,
-          לחמים: 1,
-          לחמים_בתוספת_תשלום: 3
+          'סלטים': 7,
+          'מנה ראשונה': 0,
+          'מנה ראשונה אופציה שניה': 0,
+          'ממולאים': 4,
+          'ממולאים 1 לבחירה': 1,
+          'עיקרית': 3,
+          'עיקרית 2': 0,
+          'תוספות חמות': 3,
+          'תוספות חמות בתוספת תשלום': 0,
+          'לחמים': 1,
+          'לחמים בתוספת תשלום': 3
         },
         sugTafrit, numberOfPuple
       };
@@ -131,17 +135,17 @@ let Tafritim = $state('TafritHofshi'); // Default value for Tafritim
       return {
         price: 59,
         max: {
-          סלטים: 5,
-          מנה_ראשונה: 0,
-          מנה_ראשונה_אופציה_שניה: 0,
-          ממולאים: 0,
-          ממולאים_1_לבחירה: 0,
-          עיקרית: 2,
-          עיקרית_2: 2,
-          תוספות_חמות: 3,
-          תוספות_חמות_בתוספת_תשלום: 1,
-          לחמים: 1,
-          לחמים_בתוספת_תשלום: 3
+          'סלטים': 5,
+          'מנה ראשונה': 0,
+          'מנה ראשונה אופציה שניה': 0,
+          'ממולאים': 0,
+          'ממולאים 1 לבחירה': 0,
+          'עיקרית': 2,
+          'עיקרית 2': 2,
+          'תוספות חמות': 3,
+          'תוספות חמות בתוספת תשלום': 1,
+          'לחמים': 1,
+          'לחמים בתוספת תשלום': 3
         },
         sugTafrit, numberOfPuple
       };
@@ -150,17 +154,17 @@ let Tafritim = $state('TafritHofshi'); // Default value for Tafritim
       return {
         price: 75,
         max: {
-          סלטים: 6,
-          מנה_ראשונה: 1,
-          מנה_ראשונה_אופציה_שניה: 0,
-          ממולאים: 2,
-          ממולאים_1_לבחירה: 1,
-          עיקרית: 1,
-          עיקרית_2: 1,
-          תוספות_חמות: 2,
-          תוספות_חמות_בתוספת_תשלום: 1,
-          לחמים: 1,
-          לחמים_בתוספת_תשלום: 3
+          'סלטים': 6,
+          'מנה ראשונה': 1,
+          'מנה ראשונה אופציה שניה': 0,
+          'ממולאים': 2,
+          'ממולאים 1 לבחירה': 1,
+          'עיקרית': 1,
+          'עיקרית 2': 1,
+          'תוספות חמות': 2,
+          'תוספות חמות בתוספת תשלום': 1,
+          'לחמים': 1,
+          'לחמים בתוספת תשלום': 3
         },
         sugTafrit, numberOfPuple
       };
@@ -169,17 +173,17 @@ let Tafritim = $state('TafritHofshi'); // Default value for Tafritim
       return {
         price: 90,
         max: {
-          סלטים: 7,
-          מנה_ראשונה: 2,
-          מנה_ראשונה_אופציה_שניה: 0,
-          ממולאים: 2,
-          ממולאים_1_לבחירה: 0,
-          עיקרית: 2,
-          עיקרית_2: 0,
-          תוספות_חמות: 3,
-          תוספות_חמות_בתוספת_תשלום: 0,
-          לחמים: 0,
-          לחמים_בתוספת_תשלום: 0
+          'סלטים': 7,
+          'מנה ראשונה': 2,
+          'מנה ראשונה אופציה שניה': 0,
+          'ממולאים': 2,
+          'ממולאים 1 לבחירה': 0,
+          'עיקרית': 2,
+          'עיקרית 2': 0,
+          'תוספות חמות': 3,
+          'תוספות חמות בתוספת תשלום': 0,
+          'לחמים': 0,
+          'לחמים בתוספת תשלום': 0
         },
         sugTafrit, numberOfPuple
       };
@@ -188,17 +192,17 @@ let Tafritim = $state('TafritHofshi'); // Default value for Tafritim
       return {
         price: 80,
         max: {
-          סלטים: 7,
-          מנה_ראשונה: 0,
-          מנה_ראשונה_אופציה_שניה: 0,
-          ממולאים: 4,
-          ממולאים_1_לבחירה: 0,
-          עיקרית: 2,
-          עיקרית_2: 0,
-          תוספות_חמות: 3,
-          תוספות_חמות_בתוספת_תשלום: 0,
-          לחמים: 0,
-          לחמים_בתוספת_תשלום: 0
+          'סלטים': 7,
+          'מנה ראשונה': 0,
+          'מנה ראשונה אופציה שניה': 0,
+          'ממולאים': 4,
+          'ממולאים 1 לבחירה': 0,
+          'עיקרית': 2,
+          'עיקרית 2': 0,
+          'תוספות חמות': 3,
+          'תוספות חמות בתוספת תשלום': 0,
+          'לחמים': 0,
+          'לחמים בתוספת תשלום': 0
         },
         sugTafrit, numberOfPuple
       };
@@ -207,17 +211,17 @@ let Tafritim = $state('TafritHofshi'); // Default value for Tafritim
       return {
         price: 65,
         max: {
-          סלטים: 4,
-          מנה_ראשונה: 0,
-          מנה_ראשונה_אופציה_שניה: 0,
-          ממולאים: 0,
-          ממולאים_1_לבחירה: 1,
-          עיקרית: 1,
-          עיקרית_2: 1,
-          תוספות_חמות: 1,
-          תוספות_חמות_בתוספת_תשלום: 0,
-          לחמים: 1,
-          לחמים_בתוספת_תשלום: 3
+          'סלטים': 4,
+          'מנה ראשונה': 0,
+          'מנה ראשונה אופציה שניה': 0,
+          'ממולאים': 0,
+          'ממולאים 1 לבחירה': 1,
+          'עיקרית': 1,
+          'עיקרית 2': 1,
+          'תוספות חמות': 1,
+          'תוספות חמות בתוספת תשלום': 0,
+          'לחמים': 1,
+          'לחמים בתוספת תשלום': 3
         },
         sugTafrit, numberOfPuple
       };
@@ -226,17 +230,17 @@ let Tafritim = $state('TafritHofshi'); // Default value for Tafritim
       return {
         price: 80,
         max: {
-          סלטים: 1,
-          מנה_ראשונה: 0,
-          מנה_ראשונה_אופציה_שניה: 0,
-          ממולאים: 1,
-          ממולאים_1_לבחירה: 0,
-          עיקרית: 1,
-          עיקרית_2: 0,
-          תוספות_חמות: 0,
-          תוספות_חמות_בתוספת_תשלום: 0,
-          לחמים: 1,
-          לחמים_בתוספת_תשלום: 0
+          'סלטים': 1,
+          'מנה ראשונה': 0,
+          'מנה ראשונה אופציה שניה': 0,
+          'ממולאים': 1,
+          'ממולאים 1 לבחירה': 0,
+          'עיקרית': 1,
+          'עיקרית 2': 0,
+          'תוספות חמות': 0,
+          'תוספות חמות בתוספת תשלום': 0,
+          'לחמים': 1,
+          'לחמים בתוספת תשלום': 0
         },
         sugTafrit, numberOfPuple
       };
@@ -246,63 +250,103 @@ let Tafritim = $state('TafritHofshi'); // Default value for Tafritim
   }
 }
 
-let TafritimPrice = $derived.by(() => selectTafrit(Tafritim));
+  let TafritimPrice = $derived.by(() => selectTafrit(Tafritim));
 
-  const categoryOrder = [
-  'סלטים',
-  'מנה_ראשונה',
-  'ממולאים',
-  'ממולאים_1_לבחירה',
-  'עיקרית',
-  'עיקרית_2',
-  'תוספות_חמות',
-  'תוספות_חמות_בתוספת_תשלום',
-  'לחמים',
-  'לחמים_בתוספת_תשלום'
-];
+  // ===============================
+  // Category Display Order
+  // ===============================
+        const categoryOrder = [
+          'סלטים',
+          'מנה ראשונה',
+          'ממולאים',
+          'ממולאים 1 לבחירה',
+          'עיקרית',
+          'עיקרית 2',
+          'תוספות חמות',
+          'תוספות חמות בתוספת תשלום',
+          'לחמים',
+          'לחמים בתוספת תשלום'
+        ];
 
-  // Group products by category where p[Tafritim] === "1"
-let groupedByCategory = $derived.by(() =>
-  products
-    .filter(p => p[Tafritim] === "1")
-    .reduce((acc, product) => {
-      if (!acc[product.category]) acc[product.category] = [];
-      acc[product.category].push(product);
-      return acc;
-    }, {})
-);
-let checkIfMoreOrLessThen25 = $derived.by(()=>{
-  if(Number(numberOfPuple) >=25){
-   return true;
-  }
-});
 
-// hendeling pressing radio btn in the middelr of ordering 
+  // ===============================
+  // Derived: Grouped Products by Category
+  // ===============================
+  let groupedByCategory = $derived.by(() =>
+    products
+      .filter(p => p[Tafritim] === "1")
+      .reduce((acc, product) => {
+        if (!acc[product.category]) acc[product.category] = [];
+        acc[product.category].push(product);
+        return acc;
+      }, {})
+  );
 
-function handleTafritimChange(newValue) {
-    // Are there any checked checkboxes?
+  // ===============================
+  // Derived: 25 People Check
+  // ===============================
+  let checkIfMoreOrLessThen25 = $derived.by(() => Number(numberOfPuple) >= 25);
+
+  // ===============================
+  // Event Handlers: Tafritim (Menu) Change
+  // ===============================
+  function handleTafritimChange(newValue) {
     const anyChecked = Object.values(selectedProducts).some(Boolean);
     if (anyChecked && Tafritim !== newValue) {
-      // Hebrew warning/confirm
       if (
         !confirm(
           "בחירת סוג תפריט אחר תאפס את כל הבחירות הקודמות.\nלהמשיך ולאפס את כל הבחירות?"
         )
-      ) {
-        // User clicked "Cancel" — do nothing!
-        return;
-      }
-      // User confirmed: reset all checked and inputs
+      ) return;
       selectedProducts = {};
       productQuantities = {};
       productComments = {};
       productExecutedBy = {};
     }
-    Tafritim = newValue; // Set the new Tafritim value
+    Tafritim = newValue;
     dispatch('MachirMana', selectTafrit(newValue));
   }
+
+  // ===============================
+  // Helpers: Collect Selected Order Items
+  // ===============================
+  function getSelectedOrderItems() {
+    let result = [];
+    for (let key in selectedProducts) {
+      if (selectedProducts[key]) {
+        const [category, ...rest] = key.split('_');
+        const name = rest.join('_');
+        const product = products.find(
+          p => p.category === category && p.name === name
+        ) || {};
+        result.push({
+          name,
+          category,
+          product_id: product.product_id || null,
+          quantity: Number(productQuantities[key]) || 1,
+          ExecutedBy: productExecutedBy[key] || '',
+          comment: productComments[key] || '',
+          total: category === 'סלטים'
+          ? getSaladTotal(product)
+          : Math.ceil((Number(productQuantities[key]) || 0) * (Number(numberOfPuple) || 1)),
+        });
+      }
+    }
+    return result;
+  }
+  let selectedOrderItems = $derived.by(() => getSelectedOrderItems());
+
+  // ===============================
+  // Dispatch Order Item Changes to Parent
+  // ===============================
+  $effect(() => {
+    dispatch('updateOrderItems', { items: selectedOrderItems });
+  });
 </script>
 
+<!-- ===============================
+     Tafritim (Menu) Selection Radios
+=============================== -->
 <div class="tafritim-container">
   <label>
     <input
@@ -387,6 +431,9 @@ function handleTafritimChange(newValue) {
   </label>
 </div>
 
+<!-- ===============================
+     People Count and Price Info
+=============================== -->
 <div class="people-input-box">
   <div class="people-input-wrap">
     <label for="people-count" class="people-label">
@@ -404,7 +451,6 @@ function handleTafritimChange(newValue) {
         {numberOfPuple < 25 ? 'מתחת ל-25 איש' : 'מעל ל-25 איש'}
       </span>
     </label>
-    <!-- price info moved inside here, to the left side -->
     <p class="price-info">
       <span>מחיר מנה נבחרת:</span>
       <span class="price-value">
@@ -414,125 +460,122 @@ function handleTafritimChange(newValue) {
   </div>
 </div>
 
-
-
+<!-- ===============================
+     Main Table: Product Categories
+=============================== -->
 {#key Tafritim}
-<div class="tatritimContainer" in:fly={{Duration:1000, y:-200}}>
-  {#each categoryOrder as category}
-  {#if groupedByCategory[category]}
-    <h3>
-      {category}
-      - נבחרו:
-      {groupedByCategory[category].filter(p => selectedProducts[`${category}_${p.name}`]).length}
-      מתוך:
-      {TafritimPrice?.max?.[category] ?? '∞'}
-    </h3>
-    <table style="width:100%; margin-bottom:16px;">
-     <thead>
-  <tr>
-    <th style="width:32px;"></th>
-    <th>שם הפריט</th>
-    <th>כמות</th>
-    <th>סה״כ</th>
-    <th>יבוצע ע״י</th> <!-- NEW COLUMN -->
-    <th>הערות</th>
-  </tr>
-</thead>
-
-      <tbody>
-      {#each groupedByCategory[category] as product, i}
-        <tr class={
-          Tafritim !== 'chatifim' &&
-          !selectedProducts[`${category}_${product.name}`] &&
-          groupedByCategory[category].filter(
-            p => selectedProducts[`${category}_${p.name}`]
-          ).length >= (TafritimPrice?.max?.[category] ?? Infinity)
-            ? 'disabled'
-            : ''
-        }>
-          <td>
-           <input
-  type="checkbox"
-  bind:checked={selectedProducts[`${category}_${product.name}`]}
- onchange={() => {
-  if (selectedProducts[`${category}_${product.name}`]) {
-    if (category === 'סלטים') {
-      productQuantities[`${category}_${product.name}`] = 1; // or ''
-    } else {
-      const numPeople = Number(numberOfPuple) || 1;
-      productQuantities[`${category}_${product.name}`] =
-        numPeople <= 25
-          ? Number(product.less_than_25) || 0
-          : Number(product.above_25) || 0;
-    }
-    productExecutedBy[`${category}_${product.name}`] = product.production_instraction || '';
-  } else {
-    productQuantities[`${category}_${product.name}`] = undefined;
-    productExecutedBy[`${category}_${product.name}`] = '';
-  }
-}}
-/>
-
-          </td>
-          <td>{product.name}</td>
-          <td>
-            <input
-  type="number"
-  min="0"
-  bind:value={productQuantities[`${category}_${product.name}`]}
-  oninput={() => {
-    let v = Number(productQuantities[`${category}_${product.name}`]);
-    productQuantities[`${category}_${product.name}`] = isNaN(v) || v < 1 ? 1 : v;
-  }}
-  disabled={!selectedProducts[`${category}_${product.name}`]}
-/>
-
-          </td>
-     <td>
-  <input
-    type="text"
-    readonly
-    value={
-      selectedProducts[`${category}_${product.name}`]
-        ? (
-            category === 'סלטים'
-              ? getSaladTotal(product)
-              : (Number(productQuantities[`${category}_${product.name}`]) || 0) * (Number(numberOfPuple) || 1)
-          )
-        : ''
-    }
-  />
-
-</td>
-
-
-<td>
-        <input
-          type="text"
-          placeholder="יבוצע ע״י"
-          bind:value={productExecutedBy[`${category}_${product.name}`]}
-          disabled={!selectedProducts[`${category}_${product.name}`]}
-        />
-      </td>
-          <td>
-            <input
-              type="text"
-              placeholder="הערה"
-              bind:value={productComments[`${category}_${product.name}`]}
-              disabled={!selectedProducts[`${category}_${product.name}`]}
-            />
-          </td>
-        </tr>
-      {/each}
-      </tbody>
-    </table>
-  {/if}
-{/each}
-
-</div>
+  <div class="tatritimContainer" in:fly={{Duration:1000, y:-200}}>
+    {#each categoryOrder as category}
+      {#if groupedByCategory[category]}
+        <h3>
+          {category}
+          - נבחרו:
+          {groupedByCategory[category].filter(p => selectedProducts[`${category}_${p.name}`]).length}
+          מתוך:
+          {TafritimPrice?.max?.[category] ?? '∞'}
+        </h3>
+        <table style="width:100%; margin-bottom:16px;">
+          <thead>
+            <tr>
+              <th style="width:32px;"></th>
+              <th>שם הפריט</th>
+              <th>כמות</th>
+              <th>סה״כ</th>
+              <th>יבוצע ע״י</th>
+              <th>הערות</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each groupedByCategory[category] as product, i}
+              <tr class={
+                Tafritim !== 'chatifim' &&
+                !selectedProducts[`${category}_${product.name}`] &&
+                groupedByCategory[category].filter(
+                  p => selectedProducts[`${category}_${p.name}`]
+                ).length >= (TafritimPrice?.max?.[category] ?? Infinity)
+                  ? 'disabled'
+                  : ''
+              }>
+                <td>
+                  <input
+                    type="checkbox"
+                    bind:checked={selectedProducts[`${category}_${product.name}`]}
+                    onchange={() => {
+                      if (selectedProducts[`${category}_${product.name}`]) {
+                        if (category === 'סלטים') {
+                          productQuantities[`${category}_${product.name}`] = 1;
+                        } else {
+                          const numPeople = Number(numberOfPuple) || 1;
+                          productQuantities[`${category}_${product.name}`] =
+                            numPeople <= 25
+                              ? Number(product.less_than_25) || 0
+                              : Number(product.above_25) || 0;
+                        }
+                        productExecutedBy[`${category}_${product.name}`] = product.production_instraction || '';
+                      } else {
+                        productQuantities[`${category}_${product.name}`] = undefined;
+                        productExecutedBy[`${category}_${product.name}`] = '';
+                      }
+                    }}
+                  />
+                </td>
+                <td>{product.name}</td>
+                <td>
+                  <input
+                    type="number"
+                    min="0"
+                    bind:value={productQuantities[`${category}_${product.name}`]}
+                    oninput={() => {
+                      let v = Number(productQuantities[`${category}_${product.name}`]);
+                      productQuantities[`${category}_${product.name}`] = isNaN(v) || v < 1 ? 1 : v;
+                    }}
+                    disabled={!selectedProducts[`${category}_${product.name}`]}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    readonly
+                    value={
+                      selectedProducts[`${category}_${product.name}`]
+                        ? (
+                            category === 'סלטים'
+                              ? getSaladTotal(product)
+                              : Number(
+                                (
+                                  (Number(productQuantities[`${category}_${product.name}`]) || 0) *
+                                  (Number(numberOfPuple) || 1)
+                                ).toFixed(2)
+                              )
+                          )
+                        : ''
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    placeholder="יבוצע ע״י"
+                    bind:value={productExecutedBy[`${category}_${product.name}`]}
+                    disabled={!selectedProducts[`${category}_${product.name}`]}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    placeholder="הערה"
+                    bind:value={productComments[`${category}_${product.name}`]}
+                    disabled={!selectedProducts[`${category}_${product.name}`]}
+                  />
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      {/if}
+    {/each}
+  </div>
 {/key}
-
-
 
 
 <style>

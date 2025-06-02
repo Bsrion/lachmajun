@@ -1,197 +1,86 @@
 <script>
-
 import CustomerForm from '../lib/CustomerForm.svelte';
 import { onMount } from 'svelte';
 import { blur, crossfade, draw, fade, fly, scale, slide} from 'svelte/transition';
 import AddressSearch from '../components/AddressAutocomplete.svelte';
 import DateTimePicker from '../components/DatePicker.svelte';
 import Tafritim from '../components/tafritim.svelte'
+import { Duration } from 'svelte-ux';
 
-  let customer = $state({
-    firstName: '',
-    lastName: '',
-    phone: '',
-    phone2: '',
-    email: '',
-    address: '',
-    comment: '',
-    userName: '',
-    userPassword: '',
-    dateOfSuplay:'',
-    houerOfSuplay:null,
-    deliveryCity:'ירושלים',
-    deliveryPlace:'',
-    deliveryPlaceNumber:'',
-    deliveryPlaceNote:'',
-    dateOfOrder:null,
-    hotOrCold: '',
-    comments: '',
-    orderNum: null,
-    orderStatus: 'פתוח',
-    orderDay: '',
-    orderDate: null,
-    orderTime: null,
-    orderType: null,
-    numOfSets: 1,
-    orderBasePrice: null,
-    orderDeliveryPrice: null,
-    // orderTotalPrice: 0,
-    orderItems: [],
+let customer = $state({
+  firstName: '',
+  lastName: '',
+  phone: '',
+  phone2: '',
+  email: '',
+  address: '',
+  comment: '',
+  userName: '',
+  userPassword: '',
+  dateOfSuplay:'',
+  houerOfSuplay:null,
+  deliveryCity:'ירושלים',
+  deliveryPlace:'',
+  deliveryPlaceNumber:'',
+  deliveryPlaceNote:'',
+  dateOfOrder:null,
+  hotOrCold: '',
+  comments: '',
+  orderNum: null,
+  orderStatus: 'פתוח',
+  orderDay: '',
+  orderDate: null,
+  orderTime: null,
+  orderType: null,
+  numOfSets: 1,
+  orderBasePrice: null,
+  orderDeliveryPrice: null,
+  orderItems: [],
+  name: ''
+});
 
-  });
+let orderPrice = $derived(customer.orderBasePrice * customer.numOfSets);
+let orderTotalPrice = $derived(orderPrice + customer.orderDeliveryPrice);
+let orderDelveryFullAdd = $derived(customer.deliveryPlace + ' ' + customer.deliveryPlaceNumber + ', ' + customer.deliveryCity + ' - ' + customer.deliveryPlaceNote);
+let showDeliveryInputs = $state(false);
+let SelectedTafrit = $state('TafritHofshi');
+let tafritimFixedPrice = $state(null);
+let nameSuggestions = $state([]);
+let showNewUserPrompt = $state(false);
+let selectedIndex = $state(-1);
+let suggestionRefs = $state([]);
+let warning = $state('');
+let selectedProducts = $state({});
+let productExecutedBy = $state({});
+let productQuantities = $state({});
+let showInputs = $state(false);
+let toDoOrder = $state([]);
+let isNewCustomer = $state(false);
+let showcustomersForm = $state(false);
+let selectedCustomer = $state(null);
 
+// --- SEARCH: improved matching for any word start (like מיכל א matches מיכל אלבז) ---
+function isMatch(cust, qWords) {
+  const detailWords = [
+    cust.firstName,
+    cust.lastName,
+    cust.phone,
+    cust.address
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+    .split(/[\s,\-]+/)
+    .filter(Boolean);
 
-  let orderPrice = $derived(customer.orderBasePrice * customer.numOfSets);
-  let orderTotalPrice = $derived(orderPrice + customer.orderDeliveryPrice);
-  let orderDelveryFullAdd = $derived(customer.deliveryPlace + ' ' + customer.deliveryPlaceNumber + ', ' + customer.deliveryCity + ' - ' + customer.deliveryPlaceNote)  ;
-  let showDeliveryInputs = $state(false);
-  let SelectedTafrit = $state('TafritHofshi');
-  let tafritimFixedPrice = $state(null);
-
-  let showInputs = $state(false);
-  const optionsByCategory = {
-  'סלטים': ['חומוס', 'טחינה', 'סלט גזר', 'סלט כרוב', 'סלט ירקות קצוץ'],
-  'רטבים לסלט': ['וינגרט', 'רוטב שום לימון', 'בלסמי', 'צ׳ילי מתוק'],
-  'מבחר עיקריות': ['שניצל', 'פרגיות בתנור', 'קציצות ברוטב עגבניות', 'חזה עוף', 'מוסקה'],
-  'מבחר תוספות': ['אורז לבן', 'קוסקוס', 'תפוחי אדמה בתנור', 'פירה'],
-  'מבחר ממולאים / ראשונות': ['עלי גפן', 'קובה', 'בורקס גבינה', 'לביבות ירק'],
-  'לחמים': ['לחמניות', 'פיתות', 'חלה'],
-  'שתייה': ['מים מינרלים', 'קולה', 'ספרייט', 'מים בטעמים'],
-  'חדפעמי': ['צלחות', 'סכום', 'כוסות', 'מפות'],
-  'אלומיניום לתיבול': ['מגש אלומיניום קטן', 'מגש אלומיניום גדול'],
-  'שונות': ['מגבונים', 'ניילון נצמד', 'נייר כסף']
-};
-
-// product list from server
-let products = $state([]);
- onMount(async () => {
-    try {
-      const res = await fetch('https://dilen-digital.co.il/api/production.php');
-      if (!res.ok) throw new Error('Failed to fetch products');
-      products = await res.json();
-    } catch (e) {
-      error = e.message;
-    }
-  });
-
-  // product list from server
-
-
-let orderItems = $state([
-  { category: 'סלטים', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['סלטים'] },
-  { category: 'רטבים לסלט', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['רטבים לסלט'] },
-  { category: 'מבחר עיקריות', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['מבחר עיקריות'] },
-  { category: 'מבחר תוספות', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['מבחר תוספות'] },
-  { category: 'מבחר ממולאים / ראשונות', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['מבחר ממולאים / ראשונות'] },
-  { category: 'חד פעמי', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['חדפעמי'] },
-  { category: 'אלומיניום לתיבול', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['אלומיניום לתיבול'] },
-  { category: 'לחמים', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['לחמים'] },
-  { category: 'שתייה', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['שתייה'] },
-  { category: 'שונות', name: '', quantity: null, amount: null, comment: '', options: optionsByCategory['שונות'] }
-]);
-
-
-function maybeAddNewRow(item) {
-  // Check if this item is the last in its category
-  const itemsInCategory = orderItems.filter(i => i.category === item.category);
-  const isLast = itemsInCategory[itemsInCategory.length - 1] === item;
-
-  // If it's the last row in category and has a name or quantity > 0, add a new empty row
-  if (isLast && (item.name.trim() !== '' || item.quantity > 0)) {
-    orderItems = [
-      ...orderItems,
-      {
-        category: item.category,
-        name: '',
-        quantity: 0,
-        amount: 0,
-        comment: '',
-        options: optionsByCategory[item.category] || []
-      }
-    ];
-  }
+  // Each query word must be a prefix of *some* detail word
+  return qWords.every(qw =>
+    detailWords.some(dw => dw.startsWith(qw))
+  );
 }
-
-
-  let toDoOrder = $derived.by(() =>
-    orderItems.filter(i => i.quantity > 0 && i.name !== ''));
-
-  function printPage() {
-    window.print();
-  }
-
- async function sendOrder() {
-  if (!customer.firstName || !customer.lastName || !customer.phone || !customer.address) {
-  alert("יש למלא את כל שדות החובה");
-  return;
-}
- 
-   // אם זה לקוח חדש – צור אותו קודם
-  if (isNewCustomer) {
-    const createRes = await fetch('https://dilen-digital.co.il/api/add_customer.php', {
-      method: 'POST',
-      body: JSON.stringify(customer),
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-
-    if (!createRes.ok) {
-      alert('שגיאה ביצירת לקוח חדש');
-      return;
-    }
-
-    const newCustomerData = await createRes.json();
-    customer.id = newCustomerData.id; // אם ה-API מחזיר את ה-id של הלקוח
-  }
-            
-
-  // המשך בשליחת ההזמנה
-  const response = await fetch("https://dilen-digital.co.il/api/submit_order.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      user_id: customer.id,
-      order_data: {
-        customer,
-        items: orderItems.filter(i => i.quantity > 0)
-      }
-    })
-  });
-
-  const data = await response.json();
-  if (data.success) {
-     alert(`הזמנה נשלחה! מספר הזמנה: ${data.order_num}`);
-  
-  // איפוס פרטי הלקוח
-  customer = [...startPointCustomer];
-
-
-  // איפוס פרטי ההזמנה
-  orderItems = orderItems.map(item => ({
-    ...item,
-    quantity: 0
-  }));
-
-  // אם אתה משתמש ב-state (למשל Svelte עם Runes או reactive vars), תצטרך גם להפעיל update
-
-} else {
-  alert('שגיאה בשליחת הזמנה');
-  console.error(data);
-}
-}
-
-
-  let nameSuggestions = $state([]);
-  let showNewUserPrompt = $state(false);
-  let selectedIndex = $state(-1);
-  let suggestionRefs = $state([]);
-  let warning = $state('');
 
 async function onNameInput() {
-  const input = customer.name.trim();
+  const input = (customer.name || '').trim();
   selectedIndex = -1;
 
   if (input.length < 1) {
@@ -203,27 +92,42 @@ async function onNameInput() {
   const url = `https://dilen-digital.co.il/api/customers_list.php`;
   const params = new URLSearchParams();
 
-  if (/^\d+$/.test(input)) {
-    params.append('id', input);
-  } else {
-    params.append('q', input);
-  }
+  // If you want to always fetch a larger set (e.g. only by first name),
+  // change this to fetch more results so you can filter them client-side.
+  params.append('q', input.split(/\s+/)[0]); // fetch by first word for broader results
 
   const res = await fetch(`${url}?${params.toString()}`);
 
   if (res.ok) {
     const results = await res.json();
-    nameSuggestions = results;
-    showNewUserPrompt = results.length === 0;
+
+    // Split the search input into words
+    const queryWords = input.toLowerCase().split(/\s+/).filter(Boolean);
+
+    // Combine customer fields and split to words for each customer
+    function isMatch(cust, qWords) {
+      // This creates an array like ['מיכל','אלבז','050-6789012','פתח','תקווה','חן','23']
+      const detailWords = [
+        cust.firstName, cust.lastName, cust.phone, cust.address
+      ].filter(Boolean).join(' ').toLowerCase().split(/[\s,\-]+/);
+
+      // Every query word should be a prefix of *some* detail word
+      return qWords.every(qw => detailWords.some(dw => dw.startsWith(qw)));
+    }
+
+    nameSuggestions = results.filter(cust => isMatch(cust, queryWords));
+    showNewUserPrompt = nameSuggestions.length === 0;
   } else {
     nameSuggestions = [];
     showNewUserPrompt = false;
   }
 }
 
+
+
+// --- KEYBOARD NAV ---
 function handleKeydown(event) {
   if (nameSuggestions.length === 0) return;
-
   if (event.key === 'ArrowDown') {
     selectedIndex = (selectedIndex + 1) % nameSuggestions.length;
     scrollSelectedIntoView();
@@ -236,11 +140,10 @@ function handleKeydown(event) {
     selectCustomer(nameSuggestions[selectedIndex]);
     nameSuggestions = [];
     selectedIndex = -1;
-  }else if (event.key === 'Escape') {
-  nameSuggestions = [];
-  selectedIndex = -1;
-}
-
+  } else if (event.key === 'Escape') {
+    nameSuggestions = [];
+    selectedIndex = -1;
+  }
 }
 
 function scrollSelectedIntoView() {
@@ -250,226 +153,309 @@ function scrollSelectedIntoView() {
   }
 }
 
-let isNewCustomer = $state(false);
-
+// --- SELECT CUSTOMER ---
 function selectCustomer(cust) {
   showInputs = true;
   customer = {
     ...customer,
     ...cust,
-    name: `${cust.firstName} ${cust.lastName} - ${cust.phone} - ${cust.address}` // optional, for display only
+    name: `${cust.firstName} ${cust.lastName} - ${cust.phone} - ${cust.address}` // for display
   };
   nameSuggestions = [];
-  showNewUserPrompt = false;n
+  showNewUserPrompt = false;
   isNewCustomer = false;
 }
 
-let showcustomersForm = $state(false);
+// --- CUSTOMER FORM HANDLERS ---
+function handleSave(e) {
+  const { updatedCustomer } = e.detail;
+  customer = { ...updatedCustomer };
+  showcustomersForm = false;
+}
+function handleCancel() {
+  showcustomersForm = false;
+}
+function openEditCustomer() {
+  selectedCustomer = { ...customer };
+  showcustomersForm = true;
+}
+function onNewCustomerClick() {
+  if (!showcustomersForm) selectedCustomer = null;
+  showcustomersForm = !showcustomersForm;
+}
 
-// convert date to dd/mm/yyyy
-  function formatToDDMMYYYY(isoDate) {
-    if (!isoDate) return '';
-    const [year, month, day] = isoDate.split('-');
-    return `${day}-${month}-${year}`;
+// --- PRINT ---
+function printPage() { window.print(); }
+
+// --- SUBMIT ORDER (unchanged) ---
+async function sendOrder() {
+  if (!customer.firstName || !customer.lastName || !customer.phone || !customer.address) {
+    alert("יש למלא את כל שדות החובה");
+    return;
   }
+  if (isNewCustomer) {
+    const createRes = await fetch('https://dilen-digital.co.il/api/add_customer.php', {
+      method: 'POST',
+      body: JSON.stringify(customer),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!createRes.ok) { alert('שגיאה ביצירת לקוח חדש'); return }
+    const newCustomerData = await createRes.json();
+    customer.id = newCustomerData.id;
+  }
+  const response = await fetch("https://dilen-digital.co.il/api/submit_order.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id: customer.id,
+      order_data: {
+        customer,
+        items: sortedToDoOrder.filter(i => i.quantity > 0)
+      }
+    })
+  });
+  const data = await response.json();
+  if (data.success) {
+    alert(`הזמנה נשלחה! מספר הזמנה: ${data.order_num}`);
+    customer = [...startPointCustomer];
+    sortedToDoOrder = orderItems.map(item => ({
+      ...item,
+      quantity: 0
+    }));
+  } else {
+    alert('שגיאה בשליחת הזמנה');
+    console.error(data);
+  }
+}
 
-
-	function handleSave(event) {
-		const { updatedCustomer } = event.detail;
-		showcustomersForm = false; // hide form
-	}
-  function handleCancel() {
-		showcustomersForm = false;
-	}
+// --- ORDER SORT/REMOVE ---
+let sortKeyOrderTable = $state('category');
+let sortAscOrderTable = $state(true);
+let sortedToDoOrder = $derived.by(() => {
+  let arr = [...toDoOrder];
+  arr.sort((a, b) => {
+    let aVal = a[sortKeyOrderTable] ?? '';
+    let bVal = b[sortKeyOrderTable] ?? '';
+    if (!isNaN(aVal) && !isNaN(bVal)) {
+      aVal = +aVal;
+      bVal = +bVal;
+    }
+    if (aVal === bVal) return 0;
+    return sortAscOrderTable ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
+  });
+  return arr;
+});
+function removeItem(item) {
+  if (confirm("אם תלחצו אישור, המוצר יוסר מרשימה.")) {
+    toDoOrder = toDoOrder.filter(i => !(i.name === item.name && i.category === item.category));
+    selectedProducts[`${item.category}_${item.name}`] = false;
+    productExecutedBy[`${item.category}_${item.name}`] = '';
+    productQuantities[`${item.category}_${item.name}`] = undefined;
+  }
+}
+function sortOrderTable(key) {
+  if (sortKeyOrderTable === key) {
+    sortAscOrderTable = !sortAscOrderTable;
+  } else {
+    sortKeyOrderTable = key;
+    sortAscOrderTable = true;
+  }
+}
 </script>
-  <h1>הצעת מחיר / הזמנה</h1>
 
+<h1>הצעת מחיר / הזמנה</h1>
 <div class="form-container">
   <div class="toggleCustomesIndex">
-  <label>חפש לקוח קיים</label>
-  
-  <!-- Name search input -->
-  <div class="name-input-container">
-  <div style="display: flex; position: relative;">
-    <input
+    <label for="customer-name-input">חפש לקוח קיים</label>
+    <div class="name-input-container">
+      <div style="display: flex; position: relative;">
+        <input
   type="text"
   bind:value={customer.name}
   oninput={onNameInput}
   onkeydown={handleKeydown}
   placeholder="שם הלקוח (פרטי או משפחה)"
   disabled={showInputs}
-/>
-
-    {#if showInputs}
-      <button
-        style=" position: absolute; left: 110px; height: 50%; top:50%; transform: translateY(-50%); padding: 0px 10px;"
-        onclick={() => {
-          if (confirm("אם תלחצו אישור, פרטי הלקוח ימחקו. התאריך, השעה וכתובת המשלוח יישארו כמו שהם.")) {
-            customer.name = '';
-            showInputs = false;
-          }
-        }}
-      >
-        clear
-      </button>
-    {/if}
-  </div>
-
-
-    <!-- Suggestions dropdown -->
-{#if nameSuggestions.length > 0}
-  <ul class="suggestion-list">
-    {#each nameSuggestions as suggestion, index}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <li
-    bind:this={suggestionRefs[index]}
-    class:selected={index === selectedIndex}
-    onclick={() => selectCustomer(suggestion)}
-  >
-    {suggestion.firstName || ''} {suggestion.lastName || ''} -
-    {suggestion.phone || 'ללא טלפון'} -
-    {suggestion.address || 'ללא כתובת'} -
-    מס׳ לקוח {suggestion.id != null ? suggestion.id : '---'}
-  </li>
-{/each}
-  </ul>
-{/if}
-
-    <!-- New customer prompt -->
-    {#if showNewUserPrompt && !showInputs}
-      <div class="new-user-confirm">
-        לקוח לא נמצא.
-        <button onclick={()=>{showcustomersForm = true; showNewUserPrompt = !showNewUserPrompt}}>הוסף כלקוח חדש</button>
-      </div>
-    {/if}
-
-  <!-- Toggle form for fully new customers -->
-  <div>
-  <button onclick={() => showcustomersForm = !showcustomersForm} style="margin:10px 0;">
-  {#if !showcustomersForm}
-    לקוח חדש
-    {:else}
-    סגור חלון
-  {/if}
-  </button>
-  {#if showcustomersForm}
-  <div in:scale={{duration:1000}} out:scale={{duration:1000}}>
-         <div class="edit-form-container">
-    	<CustomerForm
-		on:save={handleSave}
-		on:cancel={handleCancel}
-	/>
-  </div>
-  </div>
-  {/if}
-    {#if showInputs}
-    <button onclick={editCustomerFilds} style='margin-right:10px'> ערוך פרטי לקוח </button>
-    <div in:fly={{duration:500, y:200}} out:fly={{duration:500, y:-200}}>
-    <input type="text"  bind:value={customer.id} placeholder="customer id" readonly/>
-    <input type="text"  bind:value={customer.firstName} placeholder="firstName"/>
-    <input type="text"  bind:value={customer.lastName} placeholder="lastName"/>
-    <input type="text"  bind:value={customer.phone} placeholder="phone"/>
-    <input type="text"  bind:value={customer.address} placeholder="phone"/>
-    </div>
-    {/if}
-    <div> <input
-  type="text"
-  bind:value={orderDelveryFullAdd}
-  onclick={() => showDeliveryInputs = !showDeliveryInputs}
-  placeholder="כתובת המשלוח"
-  id="missingDetails"
   autocomplete="off"
-  readonly
-  style="cursor:pointer; width:50%"
-/></div>
-
-{#if showDeliveryInputs}
-  <div
-    style="position: relative;"
-    in:fly={{ duration: 750, x: -500 }}
-    out:fly={{ duration: 750, x: 500 }}
-    onintroend={() => {
-      const input = document.querySelector('#street-input');
-      input?.focus();
-    }}
-  >
-    <button
-      onclick={() => showDeliveryInputs = false}
-      style="position: absolute; right:5px; top:0px;"
-    >
-      close
-    </button>
-
-   <AddressSearch
-  city={customer.deliveryCity}
-  street={customer.deliveryPlace}
-  houseNumber={customer.deliveryPlaceNumber}
-  houseNotes={customer.deliveryPlaceNote}
-  on:streetSelect={(e) => {
-    customer.deliveryCity        = e.detail.city;
-    customer.deliveryPlace       = e.detail.streetName;
-    customer.deliveryPlaceNumber = e.detail.streetNumber;
-    customer.deliveryPlaceNote       = e.detail.streetNote;
-    showDeliveryInputs = false;
-  }}
+  autocorrect="off"
+  autocapitalize="off"
+  spellcheck="false"
+  name="ignore-autocomplete"   
+  id="ignore-autocomplete"
+  data-form-autocomplete="off"     
+  aria-autocomplete="none"        
+  tabindex="0"
 />
 
-  </div>
-{/if}
-
-  <div><div>
-<DateTimePicker
-  date={customer.dateOfSuplay}
-  time={customer.houerOfSuplay}
-  idDate="date-input"
-  idTime="time-input"
-  {warning}
-    on:dateOrTimeChange={(e) => {
-    customer.dateOfSuplay = e.detail.date;
-    customer.houerOfSuplay = e.detail.time;
-  }}
-/>
-
-<Tafritim
-  on:MachirMana={(data) => {
-    customer.orderBasePrice = data.detail.price;
-    SelectedTafrit = data.detail.sugTafrit;
-    customer.numOfSets = data.detail.numberOfPuple;
-    tafritimFixedPrice = data.detail.price; // Add this line!
-  }}
-/>
-
-  {#if customer.orderDay && !warning}
-    <span class="lachmajun-hebrew-day">יום {customer.orderDay}</span>
-  {/if}
-    </div>
-  {#if warning}
-    <div class="lachmajun-warning">{warning}</div>
-  {/if}
-  </div>
+        {#if showInputs}
+          <button
+            style="position: absolute; left: 110px; height: 50%; top:50%; transform: translateY(-50%); padding: 0px 10px;"
+            onclick={() => {
+              if (confirm("אם תלחצו אישור, פרטי הלקוח ימחקו. התאריך, השעה וכתובת המשלוח יישארו כמו שהם.")) {
+                customer.name = '';
+                showInputs = false;
+              }
+            }}
+          >
+            clear
+          </button>
+        {/if}
+      </div>
+      {#if nameSuggestions.length > 0}
+        <ul class="suggestion-list" role="listbox">
+          {#each nameSuggestions as suggestion, index}
+            <li
+              bind:this={suggestionRefs[index]}
+              class:selected={index === selectedIndex}
+              role="option"
+              aria-selected={index === selectedIndex}
+              tabindex="-1"
+            >
+              <button
+                type="button"
+                style="all: unset; cursor: pointer; width: 100%; display: block;"
+                onclick={() => selectCustomer(suggestion)}
+                tabindex="0"
+              >
+                {suggestion.firstName || ''} {suggestion.lastName || ''} -
+                {suggestion.phone || 'ללא טלפון'} -
+                {suggestion.address || 'ללא כתובת'} -
+                מס׳ לקוח {suggestion.id != null ? suggestion.id : '---'}
+              </button>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+      {#if showNewUserPrompt && !showInputs}
+        <div class="new-user-confirm">
+          לקוח לא נמצא.
+          <button onclick={()=>{showcustomersForm = true; showNewUserPrompt = !showNewUserPrompt}}>הוסף כלקוח חדש</button>
         </div>
+      {/if}
+      <div>
+        {#if !showInputs}
+          <button onclick={onNewCustomerClick} style="margin:10px 0;">לקוח חדש</button>
+        {/if}
+        {#if showcustomersForm}
+          <div in:scale={{duration:1000}} out:scale={{duration:1000}}>
+            <div class="edit-form-container">
+              <CustomerForm
+                customer={selectedCustomer}
+                isEdit={selectedCustomer !== null}
+                on:save={handleSave}
+                on:cancel={handleCancel}
+              />
+            </div>
+          </div>
+        {/if}
+        {#if showInputs}
+          {#if !showcustomersForm}
+            <button onclick={openEditCustomer} style='margin-right:10px'> ערוך פרטי לקוח </button>
+          {/if}
+          <div in:fly={{duration:500, y:200}} out:fly={{duration:500, y:-200}}>
+            <input type="text"  bind:value={customer.id} placeholder="customer id" readonly/>
+            <input type="text"  bind:value={customer.firstName} placeholder="firstName" readonly/>
+            <input type="text"  bind:value={customer.lastName} placeholder="lastName" readonly/>
+            <input type="text"  bind:value={customer.phone} placeholder="phone" readonly/>
+            <input type="text"  bind:value={customer.address} placeholder="phone" readonly/>
+          </div>
+        {/if}
+        <div>
+          <input
+            type="text"
+            bind:value={orderDelveryFullAdd}
+            onclick={() => showDeliveryInputs = !showDeliveryInputs}
+            placeholder="כתובת המשלוח"
+            id="missingDetails"
+            autocomplete="off"
+            readonly
+            style="cursor:pointer; width:50%"
+          />
+        </div>
+        {#if showDeliveryInputs}
+          <div
+            style="position: relative;"
+            in:fly={{ duration: 750, x: -500 }}
+            out:fly={{ duration: 750, x: 500 }}
+            onintroend={() => {
+              const input = document.querySelector('#street-input');
+              input?.focus();
+            }}
+          >
+            <button
+              onclick={() => showDeliveryInputs = false}
+              style="position: absolute; right:5px; top:0px;"
+            >close</button>
+            <AddressSearch
+              city={customer.deliveryCity}
+              street={customer.deliveryPlace}
+              houseNumber={customer.deliveryPlaceNumber}
+              houseNotes={customer.deliveryPlaceNote}
+              on:streetSelect={(e) => {
+                customer.deliveryCity        = e.detail.city;
+                customer.deliveryPlace       = e.detail.streetName;
+                customer.deliveryPlaceNumber = e.detail.streetNumber;
+                customer.deliveryPlaceNote   = e.detail.streetNote;
+                showDeliveryInputs = false;
+              }}
+            />
+          </div>
+        {/if}
+        <div>
+          <DateTimePicker
+            date={customer.dateOfSuplay}
+            time={customer.houerOfSuplay}
+            idDate="date-input"
+            idTime="time-input"
+            {warning}
+            on:dateOrTimeChange={(e) => {
+              customer.dateOfSuplay = e.detail.date;
+              customer.houerOfSuplay = e.detail.time;
+            }}
+          />
+          <Tafritim
+            on:MachirMana={(data) => {
+              customer.orderBasePrice = data.detail.price;
+              SelectedTafrit = data.detail.sugTafrit;
+              customer.numOfSets = data.detail.numberOfPuple;
+              tafritimFixedPrice = data.detail.price;
+            }}
+            on:updateOrderItems={(e) => toDoOrder = e.detail.items }
+            bind:numberOfPuple = {customer.numOfSets }
+            bind:selectedProducts = {selectedProducts}
+            bind:productExecutedBy
+            bind:productQuantities
+          />
+          {#if customer.orderDay && !warning}
+            <span class="lachmajun-hebrew-day">יום {customer.orderDay}</span>
+          {/if}
+        </div>
+        {#if warning}
+          <div class="lachmajun-warning">{warning}</div>
+        {/if}
+      </div>
+    </div>
   </div>
-</div>
-
+<!-- ... (the rest of your markup remains unchanged) ... -->
 
 
 <!-- sum acount section -->
 
 <div class="sumAcount">
-  <label class="sumLabel">אוכל חם / קר:</label>
+  <label class="sumLabel" for="hotOrCold-hot">אוכל חם / קר:</label>
   <div class="radio-group">
-    <label class="radio-option">
-      <input type="radio" name="hotOrCold" bind:group={customer.hotOrCold} value="חם" />
+    <label class="radio-option" for="hotOrCold-hot">
+      <input id="hotOrCold-hot" type="radio" name="hotOrCold" bind:group={customer.hotOrCold} value="חם" />
       <span>חם</span>
     </label>
-    <label class="radio-option">
-      <input type="radio" name="hotOrCold" bind:group={customer.hotOrCold} value="קר" />
+    <label class="radio-option" for="hotOrCold-cold">
+      <input id="hotOrCold-cold" type="radio" name="hotOrCold" bind:group={customer.hotOrCold} value="קר" />
       <span>קר</span>
     </label>
   </div>
 
-  <label class="sumLabel">כמות אנשים:</label>
-  <input class="sumInput" type="number" bind:value={customer.numOfSets} min="1" placeholder="כמות מנות" />
+  <label class="sumLabel" for="numOfSetsInput">כמות אנשים:</label>
+  <input id="numOfSetsInput" class="sumInput" type="number" bind:value={customer.numOfSets} min="1" placeholder="כמות מנות" />
 
 <label class="sumLabel" for="orderBasePriceInput">מחיר למנה:</label>
 <div class="input-warning-wrap">
@@ -489,17 +475,17 @@ let showcustomersForm = $state(false);
   {/if}
 </div>
 
-  <label class="sumLabel">סה״כ לתשלום:</label>
-  <input class="sumInput" type="number" bind:value={orderPrice} placeholder="סה״כ לתשלום" readonly />
+  <label class="sumLabel" for="orderPriceInput">סה״כ לתשלום:</label>
+  <input id="orderPriceInput" class="sumInput" type="number" bind:value={orderPrice} placeholder="סה״כ לתשלום" readonly />
 
-  <label class="sumLabel">עלות משלוח:</label>
-  <input class="sumInput" type="number" bind:value={customer.orderDeliveryPrice} min="0" placeholder="עלות משלוח" />
+  <label class="sumLabel" for="orderDeliveryPriceInput">עלות משלוח:</label>
+  <input id="orderDeliveryPriceInput" class="sumInput" type="number" bind:value={customer.orderDeliveryPrice} min="0" placeholder="עלות משלוח" />
 
-  <label class="sumLabel">סה״כ כולל משלוח:</label>
-  <input class="sumInput" type="number" bind:value={orderTotalPrice} placeholder="סה״כ כולל משלוח" readonly />
+  <label class="sumLabel" for="orderTotalPriceInput">סה״כ כולל משלוח:</label>
+  <input id="orderTotalPriceInput" class="sumInput" type="number" bind:value={orderTotalPrice} placeholder="סה״כ כולל משלוח" readonly />
 
-  <label class="sumLabel" style="grid-column: 1/3;">הערות:</label>
-  <textarea class="sumTextarea" bind:value={customer.comments} style="grid-column: 1/3;" rows="2" placeholder="הערות"></textarea>
+  <label class="sumLabel" for="orderCommentsInput" style="grid-column: 1/3;">הערות:</label>
+  <textarea id="orderCommentsInput" class="sumTextarea" bind:value={customer.comments} style="grid-column: 1/3;" rows="2" placeholder="הערות"></textarea>
 </div>
 
   <div class="buttons">
@@ -524,35 +510,76 @@ let showcustomersForm = $state(false);
   </div>
 </div>
 
-  <div class="orderCheckout">
-{#if toDoOrder.length === 0 && toDoOrder}
-<h1>לא נוספו פריטים להזמנה</h1>
-{:else}
+ <div class="orderCheckout">
+  {#if sortedToDoOrder.length === 0}
+    <h1>לא נוספו פריטים להזמנה</h1>
+  {:else}
     <h2 style="text-align: center;">הזמנה סופית - <span>{customer.name}</span></h2>
     <table>
       <thead>
-        <tr>
-          <th>פריט</th>
-          <th>כמות</th>
-          <th>סה״כ</th>
-          <th>הערות</th>
-          <th>נקה</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each toDoOrder as item}
-          <tr class:orderdItem={item.quantity > 0}>
-            <td>{item.name}</td>
-            <td>{item.quantity}</td>
-            <td>{item.amount}</td>
-            <td>{item.comment}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-{/if}
-  </div>
+  <tr style="cursor: pointer;">
+    <th onclick={() => sortOrderTable('name')}>
+      שם הפריט
+      {#if sortKeyOrderTable === 'name'}
+        {sortAscOrderTable ? ' ↑' : ' ↓'}
+      {/if}
+    </th>
+    <th onclick={() => sortOrderTable('category')}>
+      קטגוריה
+      {#if sortKeyOrderTable === 'category'}
+        {sortAscOrderTable ? ' ↑' : ' ↓'}
+      {/if}
+    </th>
+    <th onclick={() => sortOrderTable('quantity')}>
+      כמות
+      {#if sortKeyOrderTable === 'quantity'}
+        {sortAscOrderTable ? ' ↑' : ' ↓'}
+      {/if}
+    </th>
+    <th onclick={() => sortOrderTable('total')}>
+      סה״כ
+      {#if sortKeyOrderTable === 'total'}
+        {sortAscOrderTable ? ' ↑' : ' ↓'}
+      {/if}
+    </th>
+    <th onclick={() => sortOrderTable('ExecutedBy')}>
+      יבוצע ע״י
+      {#if sortKeyOrderTable === 'ExecutedBy'}
+        {sortAscOrderTable ? ' ↑' : ' ↓'}
+      {/if}
+    </th>
+    <th onclick={() => sortOrderTable('comment')}>
+      הערות
+      {#if sortKeyOrderTable === 'comment'}
+        {sortAscOrderTable ? ' ↑' : ' ↓'}
+      {/if}
+    </th>
+      <th>הסר</th>
+  </tr>
+</thead>
 
+      <tbody>
+  {#each sortedToDoOrder as item}
+    <tr class:orderdItem={item.quantity > 0} in:fly={{duration:500, y:200}} out:fly={{duration:500, y:200}}>
+      <td>{item.name}</td>
+      <td>{item.category.split(' ').slice(0, 2).join(' ')}</td>
+      <td>{item.quantity}</td>
+      <td>{item.total}</td>
+      <td>{item.ExecutedBy}</td>
+      <td>{item.comment}</td>
+       <td style='text-align:center'>
+        <button onclick={() => removeItem(item)} title="הסר פריט" style="padding:5px 10px">❌</button>
+      </td>
+    </tr>
+  {/each}
+</tbody> </table>
+  {/if}
+</div>
+
+<!-- item: category, name, product_id: product.product_id || null, quantity: Number(productQuantities[key]) || 1,
+        ExecutedBy: productExecutedBy[key] || '', comment: productComments[key] || '', total: category === 'סלטים'
+      ? getSaladTotal(product)
+      : ((Number(productQuantities[key]) || 0) * (Number(numberOfPuple) || 1)), -->
 <style>
   .input-warning-wrap{
     position: relative;
@@ -606,7 +633,7 @@ let showcustomersForm = $state(false);
 }
 
 .sumTextarea {
-  width: 99%;
+  width: 97.5%;
   min-width: 120px;
   padding: 7px 12px;
   border: 1.5px solid #ccc;
@@ -685,7 +712,7 @@ select:focus {
   }
   tr{
     display: grid;
-    grid-template-columns: 1fr 0.5fr 0.5fr 2fr 0.4fr;
+    grid-template-columns: 1.5fr 0.7fr 0.4fr 0.4fr 0.4fr 1.5fr 0.4fr;
   }
 
   input[type='number'] {
@@ -695,7 +722,7 @@ select:focus {
     border: 1px solid #ccc;
     border-radius: 5px;
   }
-  input[type='text'], input[type='date'], input[type='time'], textarea {
+  input[type='text'], input[type='date'], input[type='time'] {
     width: 90%;
     height: 1.5rem;
     padding: 8px;
@@ -758,7 +785,7 @@ tr.orderdItem {
     background: #f9f9f9;
     border: 1px solid #ccc;
     border-radius: 10px;
-    max-width: 1000px;
+    max-width: 1200px;
   }
 /* .suggestion-list {
   position: absolute;
