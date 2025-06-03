@@ -7,6 +7,8 @@
   import { createEventDispatcher } from "svelte";
   import { Duration } from 'svelte-ux';
   import { derived } from 'svelte/store';
+    import CategoryStatusWidget from '../components/CategoryStatusWidget.svelte';
+
 
   // ===============================
   // Props & State Initialization
@@ -342,6 +344,45 @@
   $effect(() => {
     dispatch('updateOrderItems', { items: selectedOrderItems });
   });
+
+  // ===============================
+  // check if order complete
+  // ===============================
+      let categoriesStatus = $derived.by(() => {
+  // null safety
+  if (!TafritimPrice?.max) return { perCategory: {}, allCategoriesFull: false };
+
+  let perCategory = {};
+  let allFull = true;
+
+  for (const category of categoryOrder) {
+    // Only calculate for categories present in groupedByCategory and with a max in TafritimPrice
+    if (!groupedByCategory[category]) continue;
+    const max = TafritimPrice.max[category] ?? Infinity;
+    const selectedCount = groupedByCategory[category].filter(
+      p => selectedProducts[`${category}_${p.name}`]
+    ).length;
+    const isFull = max !== Infinity && selectedCount >= max;
+    if (!isFull) allFull = false;
+
+    perCategory[category] = {
+      category,
+      selectedCount,
+      max,
+      isFull,
+      status: max === Infinity
+        ? `נבחרו ${selectedCount} מתוך ∞`
+        : `נבחרו ${selectedCount} מתוך ${max}` + (isFull ? " (מלא)" : "")
+    };
+  }
+
+  return {
+    perCategory,
+    allCategoriesFull: allFull
+  };
+});
+
+
 </script>
 
 <!-- ===============================
@@ -577,8 +618,93 @@
   </div>
 {/key}
 
+<!-- <div class="categories-status-summary">
+  <h3>סטטוס בחירת קטגוריות</h3>
+  <ul>
+    {#each Object.values(categoriesStatus.perCategory) as cat}
+      <li class="category-status {cat.isFull ? 'full' : 'not-full'}">
+        <span class="cat-name">{cat.category}:</span>
+        <span class="cat-status-text">{cat.status}</span>
+      </li>
+    {/each}
+  </ul>
+  <div class="all-cats-status {categoriesStatus.allCategoriesFull ? 'all-full' : 'not-all-full'}">
+    {#if categoriesStatus.allCategoriesFull}
+      ✔️ כל הקטגוריות מלאות! אפשר להמשיך
+    {:else}
+      ⚠️ נותרו קטגוריות שלא הושלמו
+    {/if}
+  </div>
+</div> -->
+
+
+                  <CategoryStatusWidget {categoriesStatus}/>
+
 
 <style>
+  .categories-status-summary {
+  background: #f8fafb;
+  border: 1.5px solid #dbeafe;
+  border-radius: 10px;
+  margin: 1.5em auto 2em auto;
+  max-width: 420px;
+  padding: 1.2em 1.6em;
+  direction: rtl;
+  box-shadow: 0 2px 8px #b6cdf73a;
+  font-family: inherit;
+}
+.categories-status-summary h3 {
+  margin-top: 0;
+  font-size: 1.15em;
+  color: #0369a1;
+  margin-bottom: .6em;
+  text-align: right;
+}
+.categories-status-summary ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1em 0;
+}
+.category-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: .5em;
+  font-size: 1em;
+  border-bottom: 1px dashed #e0eaff;
+  padding-bottom: 2px;
+  color: #475569;
+  font-weight: 500;
+}
+.category-status.full .cat-status-text {
+  color: #15803d;
+  font-weight: bold;
+}
+.category-status.not-full .cat-status-text {
+  color: #d97706;
+}
+.cat-name {
+  font-weight: bold;
+}
+.all-cats-status {
+  margin-top: 1em;
+  padding: .6em .5em;
+  border-radius: 8px;
+  font-size: 1.07em;
+  text-align: center;
+  font-weight: bold;
+}
+.all-cats-status.all-full {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1.2px solid #059669;
+}
+.all-cats-status.not-all-full {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1.2px solid #fbbf24;
+}
+
   .people-input-box {
   width: 100%;
   margin: 0 0 24px 0;
