@@ -150,6 +150,15 @@
         <th onclick={() => sortTable('less_than_25')}>פחות מ-25</th>
         <th onclick={() => sortTable('above_25')}>מעל 25</th>
         <th onclick={() => sortTable('production_instraction')}>הוראת ייצור</th>
+        <th onclick={() => sortTable('emtsa_shavua_1')}>אמצע שבוע 1</th>
+        <th onclick={() => sortTable('emtsa_shavua_2')}>אמצע שבוע 2</th>
+        <th onclick={() => sortTable('seudat_mitsva_1')}>סעודת מצווה 1</th>
+        <th onclick={() => sortTable('seudat_mitsva_2')}>סעודת מצווה 2</th>
+        <th onclick={() => sortTable('keytering_leshabat_chatan_erev')}>קייטרינג לשבת חתן ערב</th>
+        <th onclick={() => sortTable('keytering_leshabat_chatan_yom')}>קייטרינג לשבת חתן יום</th>
+        <th onclick={() => sortTable('keytering_leseuda_shelishit')}>קייטרינג לסעודה שישית</th>
+        <th onclick={() => sortTable('chatifim')}>חטיפים</th>
+        <th onclick={() => sortTable('sensitiviti')}>רגישויות</th>       
         <th onclick={() => sortTable('comment')}>הערות</th>
         <th></th>
       </tr>
@@ -182,6 +191,33 @@
               <input type="text" bind:value={row.production_instraction} onclick={() => isRowClick = true} />
             </td>
             <td>
+              <input type="text" bind:value={row.emtsa_shavua_1} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <input type="text" bind:value={row.emtsa_shavua_2} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <input type="text" bind:value={row.seudat_mitsva_1} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <input type="text" bind:value={row.seudat_mitsva_2} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <input type="text" bind:value={row.keytering_leshabat_chatan_erev} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <input type="text" bind:value={row.keytering_leshabat_chatan_yom} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <input type="text" bind:value={row.keytering_leseuda_shelishit} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <input type="text" bind:value={row.chatifim} onclick={() => isRowClick = true} />
+            </td>
+            <td>
+              <input type="text" bind:value={row.sensitiviti} onclick={() => isRowClick = true} />
+            </td>
+            <td>
               <input type="text" bind:value={row.comment} onclick={() => isRowClick = true} />
             </td>
             <td>
@@ -199,6 +235,15 @@
             <td>{row.less_than_25}</td>
             <td>{row.above_25}</td>
             <td>{row.production_instraction}</td>
+            <td>{row.emtsa_shavua_1}</td>
+            <td>{row.emtsa_shavua_2}</td>
+            <td>{row.seudat_mitsva_1}</td>
+            <td>{row.seudat_mitsva_2}</td>
+            <td>{row.keytering_leshabat_chatan_erev}</td>
+            <td>{row.keytering_leshabat_chatan_yom}</td>
+            <td>{row.keytering_leseuda_shelishit}</td>
+            <td>{row.chatifim}</td>
+            <td>{row.sensitiviti}</td>
             <td>{row.comment}</td>
             <td></td>
           {/if}

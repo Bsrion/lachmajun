@@ -247,7 +247,7 @@
   }
 }
 
-  let TafritimPrice = $derived.by(() => selectTafrit(Tafritim));
+  let TafritBuilder = $derived.by(() => selectTafrit(Tafritim));
 
   // Category Display Order
   // ===============================
@@ -346,15 +346,15 @@
         // ===============================
             let categoriesStatus = $derived.by(() => {
         // null safety
-        if (!TafritimPrice?.max) return { perCategory: {}, allCategoriesFull: false };
+        if (!TafritBuilder?.max) return { perCategory: {}, allCategoriesFull: false };
 
         let perCategory = {};
         let allFull = true;
 
         for (const category of categoryOrder) {
-          // Only calculate for categories present in groupedByCategory and with a max in TafritimPrice
+          // Only calculate for categories present in groupedByCategory and with a max in TafritBuilder
           if (!groupedByCategory[category]) continue;
-          const max = TafritimPrice.max[category] ?? Infinity;
+          const max = TafritBuilder.max[category] ?? Infinity;
           const selectedCount = groupedByCategory[category].filter(
             p => selectedProducts[`${category}_${p.name}`]
           ).length;
@@ -491,7 +491,7 @@
     <p class="price-info">
       <span>מחיר מנה נבחרת:</span>
       <span class="price-value">
-        {TafritimPrice.price ? TafritimPrice.price + ' ש"ח' : '— ללא מחיר —'}
+        {TafritBuilder.price ? TafritBuilder.price + ' ש"ח' : '— ללא מחיר —'}
       </span>
     </p>
   </div>
@@ -509,7 +509,7 @@
           - נבחרו:
           {groupedByCategory[category].filter(p => selectedProducts[`${category}_${p.name}`]).length}
           מתוך:
-          {TafritimPrice?.max?.[category] ?? '∞'}
+          {TafritBuilder?.max?.[category] ?? '∞'}
         </h3>
         <table style="width:100%; margin-bottom:16px;">
           <thead>
@@ -529,7 +529,7 @@
                 !selectedProducts[`${category}_${product.name}`] &&
                 groupedByCategory[category].filter(
                   p => selectedProducts[`${category}_${p.name}`]
-                ).length >= (TafritimPrice?.max?.[category] ?? Infinity)
+                ).length >= (TafritBuilder?.max?.[category] ?? Infinity)
                   ? 'disabled'
                   : ''
               }>
