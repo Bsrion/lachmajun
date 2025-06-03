@@ -1,18 +1,18 @@
 <script>
-  // ===============================
   // Imports
   // ===============================
+
   import { onMount } from 'svelte';
   import { blur, crossfade, draw, fade, fly, scale, slide } from 'svelte/transition';
   import { createEventDispatcher } from "svelte";
   import { Duration } from 'svelte-ux';
   import { derived } from 'svelte/store';
-    import CategoryStatusWidget from '../components/CategoryStatusWidget.svelte';
+  import CategoryStatusWidget from '../components/CategoryStatusWidget.svelte';
 
 
-  // ===============================
   // Props & State Initialization
   // ===============================
+
   let { Tafritim : TafritProp = 'TafritHofshi',
         numberOfPuple = 1,
         selectedProducts = $bindable({}),
@@ -23,17 +23,12 @@
 
   let products = $state([]);
   let error = $state();
-  /////
-  // let selectedProducts = $state({});
-    // let productQuantities = $state({});
-    //   let productExecutedBy = $state({});
-  /////
   let productComments = $state({});
   let salad_quantity = $state([]);
 
-  // ===============================
   // Data Fetch: Products & Salad Quantity
   // ===============================
+
   onMount(async () => { 
     try {
       const res = await fetch('https://dilen-digital.co.il/api/production.php');
@@ -54,9 +49,9 @@
     }
   });
 
-  // ===============================
   // Helpers: Totals Calculation
   // ===============================
+
   function getProductTotal(product, numberOfPuple, quantity) {
     if (!product) return '';
     const numPeople = Number(numberOfPuple) || 1;
@@ -85,9 +80,9 @@
     return (typeof val === 'string' && val) ? val : '';
   }
 
-  // ===============================
   // Tafritim (Menu Type) Logic
   // ===============================
+
   let Tafritim = $state('TafritHofshi'); // Default value
 
  function selectTafrit(sugTafrit) {
@@ -254,9 +249,9 @@
 
   let TafritimPrice = $derived.by(() => selectTafrit(Tafritim));
 
-  // ===============================
   // Category Display Order
   // ===============================
+
         const categoryOrder = [
           'סלטים',
           'מנה ראשונה',
@@ -271,9 +266,9 @@
         ];
 
 
-  // ===============================
   // Derived: Grouped Products by Category
   // ===============================
+
   let groupedByCategory = $derived.by(() =>
     products
       .filter(p => p[Tafritim] === "1")
@@ -284,14 +279,14 @@
       }, {})
   );
 
-  // ===============================
   // Derived: 25 People Check
   // ===============================
+
   let checkIfMoreOrLessThen25 = $derived.by(() => Number(numberOfPuple) >= 25);
 
-  // ===============================
   // Event Handlers: Tafritim (Menu) Change
   // ===============================
+
   function handleTafritimChange(newValue) {
     const anyChecked = Object.values(selectedProducts).some(Boolean);
     if (anyChecked && Tafritim !== newValue) {
@@ -309,9 +304,9 @@
     dispatch('MachirMana', selectTafrit(newValue));
   }
 
-  // ===============================
   // Helpers: Collect Selected Order Items
   // ===============================
+
   function getSelectedOrderItems() {
     let result = [];
     for (let key in selectedProducts) {
@@ -336,51 +331,52 @@
     }
     return result;
   }
-  let selectedOrderItems = $derived.by(() => getSelectedOrderItems());
+  
+        let selectedOrderItems = $derived.by(() => getSelectedOrderItems());
 
-  // ===============================
-  // Dispatch Order Item Changes to Parent
-  // ===============================
-  $effect(() => {
-    dispatch('updateOrderItems', { items: selectedOrderItems });
-  });
 
-  // ===============================
-  // check if order complete
-  // ===============================
-      let categoriesStatus = $derived.by(() => {
-  // null safety
-  if (!TafritimPrice?.max) return { perCategory: {}, allCategoriesFull: false };
+        // Dispatch Order Item Changes to Parent
+        // ===============================
 
-  let perCategory = {};
-  let allFull = true;
+        $effect(() => {
+          dispatch('updateOrderItems', { items: selectedOrderItems });
+        });
 
-  for (const category of categoryOrder) {
-    // Only calculate for categories present in groupedByCategory and with a max in TafritimPrice
-    if (!groupedByCategory[category]) continue;
-    const max = TafritimPrice.max[category] ?? Infinity;
-    const selectedCount = groupedByCategory[category].filter(
-      p => selectedProducts[`${category}_${p.name}`]
-    ).length;
-    const isFull = max !== Infinity && selectedCount >= max;
-    if (!isFull) allFull = false;
+        // check if order complete
+        // ===============================
+            let categoriesStatus = $derived.by(() => {
+        // null safety
+        if (!TafritimPrice?.max) return { perCategory: {}, allCategoriesFull: false };
 
-    perCategory[category] = {
-      category,
-      selectedCount,
-      max,
-      isFull,
-      status: max === Infinity
-        ? `נבחרו ${selectedCount} מתוך ∞`
-        : `נבחרו ${selectedCount} מתוך ${max}` + (isFull ? " (מלא)" : "")
-    };
-  }
+        let perCategory = {};
+        let allFull = true;
 
-  return {
-    perCategory,
-    allCategoriesFull: allFull
-  };
-});
+        for (const category of categoryOrder) {
+          // Only calculate for categories present in groupedByCategory and with a max in TafritimPrice
+          if (!groupedByCategory[category]) continue;
+          const max = TafritimPrice.max[category] ?? Infinity;
+          const selectedCount = groupedByCategory[category].filter(
+            p => selectedProducts[`${category}_${p.name}`]
+          ).length;
+          const isFull = max !== Infinity && selectedCount >= max;
+          if (!isFull) allFull = false;
+
+          perCategory[category] = {
+            category,
+            selectedCount,
+            max,
+            isFull,
+            status: max === Infinity
+              ? `נבחרו ${selectedCount} מתוך ∞`
+              : `נבחרו ${selectedCount} מתוך ${max}` + (isFull ? " (מלא)" : "")
+          };
+        }
+
+        return {
+          perCategory,
+          allCategoriesFull: allFull
+        };
+      });
 
 
 </script>
@@ -553,9 +549,11 @@
                               : Number(product.above_25) || 0;
                         }
                         productExecutedBy[`${category}_${product.name}`] = product.production_instraction || '';
+                        productComments[`${category}_${product.name}`] = product.comment || '';
                       } else {
                         productQuantities[`${category}_${product.name}`] = undefined;
                         productExecutedBy[`${category}_${product.name}`] = '';
+                        productComments[`${category}_${product.name}`] = '';
                       }
                     }}
                   />
@@ -618,28 +616,7 @@
   </div>
 {/key}
 
-<!-- <div class="categories-status-summary">
-  <h3>סטטוס בחירת קטגוריות</h3>
-  <ul>
-    {#each Object.values(categoriesStatus.perCategory) as cat}
-      <li class="category-status {cat.isFull ? 'full' : 'not-full'}">
-        <span class="cat-name">{cat.category}:</span>
-        <span class="cat-status-text">{cat.status}</span>
-      </li>
-    {/each}
-  </ul>
-  <div class="all-cats-status {categoriesStatus.allCategoriesFull ? 'all-full' : 'not-all-full'}">
-    {#if categoriesStatus.allCategoriesFull}
-      ✔️ כל הקטגוריות מלאות! אפשר להמשיך
-    {:else}
-      ⚠️ נותרו קטגוריות שלא הושלמו
-    {/if}
-  </div>
-</div> -->
-
-
                   <CategoryStatusWidget {categoriesStatus}/>
-
 
 <style>
   .categories-status-summary {

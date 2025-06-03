@@ -1,29 +1,40 @@
 <script>
-  // --- Svelte 5 Runes API style ---
   let { categoriesStatus } = $props();
 
-  // State
   let isMinimized = $state(false);
   let isMinimizing = $state(false);
 
-  let widgetEl;
+  let widgetEl = $state();
   let startX, startY, startLeft, startTop;
   let isDragging = $state(false);
 
   let left = $state(32);
   let bottom = $state(32);
 
-  function onMinimize() {
-    isMinimizing = true;
-    setTimeout(() => {
-      isMinimized = true;
-      isMinimizing = false;
+  // Snap to bottom-left on window resize
+  if (typeof window !== "undefined") {
+    window.addEventListener('resize', () => {
       left = 32;
       bottom = 32;
-    }, 320); // match transition duration
+    });
+  }
+
+  function onMinimize() {
+    // Instantly move to the corner (no animation)
+    left = 32;
+    bottom = 32;
+    // Wait for next microtask so CSS applies new position before animating scale/opacity
+    setTimeout(() => {
+      isMinimizing = true;
+      setTimeout(() => {
+        isMinimizing = false;
+        isMinimized = true;
+      }, 180); // Match the CSS duration below
+    }, 10);
   }
   function onRestore() {
     isMinimized = false;
+    // isMinimizing stays false on restore so scale/opacity animate back in
   }
 
   function onDragStart(e) {
@@ -86,7 +97,6 @@
     <div class="widget-header">
       <span>סטטוס בחירת קטגוריות</span>
       <button class="widget-min-btn" onclick={onMinimize} title="מזער">
-        <!-- Down arrow icon for minimize -->
         <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
           <circle cx="10" cy="10" r="9" stroke="#4a90e2" stroke-width="1.6" fill="#e7f4fd"/>
           <path d="M7 9.5l3 3 3-3" stroke="#4a90e2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -120,7 +130,6 @@
   user-select: none;
   cursor: grab;
 }
-
 .categories-status-summary-widget {
   min-width: 170px;
   max-width: 420px;
@@ -130,23 +139,19 @@
   border-radius: 18px;
   box-shadow: 0 2px 14px #b8e1fd3f;
   padding: 18px 16px 14px 16px;
-  transition:
-    left 0.35s cubic-bezier(.62,-0.09,.42,1.03),
-    bottom 0.35s cubic-bezier(.62,-0.09,.42,1.03),
-    opacity 0.28s,
-    transform 0.28s;
-  opacity: 1;
-  transform: scale(1);
   font-family: inherit;
   font-size: 1em;
   word-break: keep-all;
   white-space: nowrap;
+  transition:
+    opacity 0.18s cubic-bezier(.62,-0.09,.42,1.03),
+    transform 0.18s cubic-bezier(.62,-0.09,.42,1.03);
+  opacity: 1;
+  transform: scale(1);
 }
 .categories-status-summary-widget.minimizing {
-  left: 12px !important;
-  bottom: 12px !important;
-  opacity: 0.15;
-  transform: scale(0.35);
+  opacity: 0;
+  transform: scale(0.7);
   pointer-events: none;
 }
 .widget-header {
@@ -246,7 +251,7 @@
   transition: background 0.15s, box-shadow 0.15s;
   right: unset;
   opacity: 0;
-  animation: fadeInFab 0.28s 0.32s both;
+  animation: fadeInFab 0.18s 0.15s both;
 }
 @keyframes fadeInFab {
   to { opacity: 1; }
