@@ -2,7 +2,7 @@
 import CustomerForm from '../lib/CustomerForm.svelte';
 import { onMount } from 'svelte';
 import { blur, crossfade, draw, fade, fly, scale, slide} from 'svelte/transition';
-import AddressSearch from '../components/AddressAutocomplete.svelte';
+import AddressAutocomplete from '../components/AddressAutocomplete.svelte';
 import DateTimePicker from '../components/DatePicker.svelte';
 import Tafritim from '../components/tafritim.svelte'
 import { Duration } from 'svelte-ux';
@@ -369,12 +369,11 @@ function sortOrderTable(key) {
             id="missingDetails"
             autocomplete="off"
             readonly
-            style="cursor:pointer; width:50%"
+            style="cursor:pointer; width:50%; border-radius:10px; margin:0 0 10px 0; font-size: 1.1em; padding: 10px; background: #f0f0f0; border: 1px solid #ccc;"
           />
         </div>
         {#if showDeliveryInputs}
-          <div
-            style="position: relative;"
+          <div style=" width:50%; position: relative;"
             in:fly={{ duration: 750, x: -500 }}
             out:fly={{ duration: 750, x: 500 }}
             onintroend={() => {
@@ -385,8 +384,8 @@ function sortOrderTable(key) {
             <button
               onclick={() => showDeliveryInputs = false}
               style="position: absolute; right:5px; top:0px;"
-            >close</button>
-            <AddressSearch
+            >סגור</button>
+            <AddressAutocomplete
               city={customer.deliveryCity}
               street={customer.deliveryPlace}
               houseNumber={customer.deliveryPlaceNumber}

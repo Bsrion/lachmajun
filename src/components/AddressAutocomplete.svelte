@@ -257,7 +257,7 @@
 <style>
   .address-search {
     max-width: 420px;
-    margin: 2rem auto;
+    margin: 2rem auto 2rem 0;
     background: #fff;
     padding: 1.5rem;
     border-radius: 12px;
