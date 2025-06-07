@@ -266,7 +266,6 @@ function sortOrderTable(key) {
 <h1>הצעת מחיר / הזמנה</h1>
 <div class="form-container">
   <div class="toggleCustomesIndex">
-    <label for="customer-name-input">חפש לקוח קיים</label>
     <div class="name-input-container">
       <div style="display: flex; position: relative;">
         <input
@@ -285,11 +284,12 @@ function sortOrderTable(key) {
   data-form-autocomplete="off"     
   aria-autocomplete="none"        
   tabindex="0"
+  style="width:50%;font-size: 1.1em; background: #f0f0f0; margin:0 0 10px 0; border-radius:10px; padding: 10px;"
 />
 
         {#if showInputs}
           <button
-            style="position: absolute; left: 110px; height: 50%; top:50%; transform: translateY(-50%); padding: 0px 10px;"
+            style="position: absolute; right:calc(50% - 30px); height: 50%; top:50%; transform: translateY(calc(-50% - 5px)); padding: 0px 10px;"
             onclick={() => {
               if (confirm("אם תלחצו אישור, פרטי הלקוח ימחקו. התאריך, השעה וכתובת המשלוח יישארו כמו שהם.")) {
                 customer.name = '';
@@ -297,8 +297,17 @@ function sortOrderTable(key) {
               }
             }}
           >
-            clear
+            נקה
           </button>
+        {:else}
+          {#if !showInputs && !showNewUserPrompt} 
+          <button 
+            style="position: absolute; right:calc(50% - 60px); height: 50%; top:50%; transform: translateY(calc(-50% - 5px)); padding: 0px 10px;"
+            onclick={onNewCustomerClick}
+          >
+            לקוח חדש
+          </button>
+        {/if}
         {/if}
       </div>
       {#if nameSuggestions.length > 0}
@@ -333,9 +342,6 @@ function sortOrderTable(key) {
         </div>
       {/if}
       <div>
-        {#if !showInputs}
-          <button onclick={onNewCustomerClick} style="margin:10px 0;">לקוח חדש</button>
-        {/if}
         {#if showcustomersForm}
           <div in:scale={{duration:1000}} out:scale={{duration:1000}}>
             <div class="edit-form-container">
@@ -348,16 +354,21 @@ function sortOrderTable(key) {
             </div>
           </div>
         {/if}
-        {#if showInputs}
-          {#if !showcustomersForm}
-            <button onclick={openEditCustomer} style='margin-right:10px'> ערוך פרטי לקוח </button>
+        {#if showInputs && !showcustomersForm}
+          
+          <div in:fly={{duration:500, y:200}} out:fly={{duration:500, y:-200}} style="width: 50%;">
+            <div style="position: relative;">
+            <input type="text"  style="width: 100%;" bind:value={customer.id} placeholder="customer id" readonly/>
+            {#if !showcustomersForm}
+            <button onclick={openEditCustomer}
+              style='margin-right:10px; padding:0px 10px; height:50%; position: absolute; top:50%;
+                     right: 100%; transform: translateX(calc(50% + 20px)) translateY(calc(-50%))'> ערוך </button>
           {/if}
-          <div in:fly={{duration:500, y:200}} out:fly={{duration:500, y:-200}}>
-            <input type="text"  bind:value={customer.id} placeholder="customer id" readonly/>
-            <input type="text"  bind:value={customer.firstName} placeholder="firstName" readonly/>
-            <input type="text"  bind:value={customer.lastName} placeholder="lastName" readonly/>
-            <input type="text"  bind:value={customer.phone} placeholder="phone" readonly/>
-            <input type="text"  bind:value={customer.address} placeholder="phone" readonly/>
+          </div>
+            <input type="text"  style="width: 100%;" bind:value={customer.firstName} placeholder="firstName" readonly/>
+            <input type="text"  style="width: 100%;" bind:value={customer.lastName} placeholder="lastName" readonly/>
+            <input type="text"  style="width: 100%;" bind:value={customer.phone} placeholder="phone" readonly/>
+            <input type="text"  style="width: 100%; margin-bottom: 10px;" bind:value={customer.address} placeholder="phone" readonly/>
           </div>
         {/if}
         <div>
@@ -440,7 +451,8 @@ function sortOrderTable(key) {
 
 <!-- sum acount section -->
 
-<div class="sumAcount">
+<div class="sumAcount upgradedSumAcount">
+  <!-- Hot/Cold Radio -->
   <label class="sumLabel" for="hotOrCold-hot">אוכל חם / קר:</label>
   <div class="radio-group">
     <label class="radio-option" for="hotOrCold-hot">
@@ -453,62 +465,104 @@ function sortOrderTable(key) {
     </label>
   </div>
 
+  <!-- Number of People -->
   <label class="sumLabel" for="numOfSetsInput">כמות אנשים:</label>
-  <input id="numOfSetsInput" class="sumInput" type="number" bind:value={customer.numOfSets} min="1" placeholder="כמות מנות" />
-
-<label class="sumLabel" for="orderBasePriceInput">מחיר למנה:</label>
-<div class="input-warning-wrap">
   <input
-    id="orderBasePriceInput"
+    id="numOfSetsInput"
     class="sumInput"
     type="number"
-    bind:value={customer.orderBasePrice}
-    placeholder="מחיר למנה"
-    style:border-color={tafritimFixedPrice !== null && customer.orderBasePrice != tafritimFixedPrice ? 'red' : ''}
-    style:background={tafritimFixedPrice !== null && customer.orderBasePrice != tafritimFixedPrice ? '#ffeaea' : ''}
+    bind:value={customer.numOfSets}
+    min="1"
+    placeholder="כמות מנות"
+    autocomplete="off"
   />
-  {#if tafritimFixedPrice !== null && customer.orderBasePrice != tafritimFixedPrice}
-    <span class="input-warning">
-      מחיר זה שונה מהמחיר הקבוע של התפריט ({tafritimFixedPrice} ש"ח)
-    </span>
-  {/if}
-</div>
 
-  <label class="sumLabel" for="orderPriceInput">סה״כ לתשלום:</label>
-  <input id="orderPriceInput" class="sumInput" type="number" bind:value={orderPrice} placeholder="סה״כ לתשלום" readonly />
-
-  <label class="sumLabel" for="orderDeliveryPriceInput">עלות משלוח:</label>
-  <input id="orderDeliveryPriceInput" class="sumInput" type="number" bind:value={customer.orderDeliveryPrice} min="0" placeholder="עלות משלוח" />
-
-  <label class="sumLabel" for="orderTotalPriceInput">סה״כ כולל משלוח:</label>
-  <input id="orderTotalPriceInput" class="sumInput" type="number" bind:value={orderTotalPrice} placeholder="סה״כ כולל משלוח" readonly />
-
-  <label class="sumLabel" for="orderCommentsInput" style="grid-column: 1/3;">הערות:</label>
-  <textarea id="orderCommentsInput" class="sumTextarea" bind:value={customer.comments} style="grid-column: 1/3;" rows="2" placeholder="הערות"></textarea>
-</div>
-
-  <div class="buttons">
-    {#if customer.dateOfSuplay && customer.houerOfSuplay && customer.deliveryPlace}
-    <button onclick={sendOrder}>שמור הזמנה </button>
-    {:else}
-    <button>נא למלא את כל השדות: 
-        {#if !customer.deliveryPlace}
-      <a href="#missingDetails" class="highlight-link"> <span class="buttonSpan" > כתובת אספקה -</span></a>
+  <!-- Price per Plate -->
+  <label class="sumLabel" for="orderBasePriceInput">מחיר למנה:</label>
+  <div class="input-warning-wrap">
+    <input
+      id="orderBasePriceInput"
+      class="sumInput"
+      type="number"
+      bind:value={customer.orderBasePrice}
+      placeholder="מחיר למנה"
+      style:border-color={tafritimFixedPrice !== null && customer.orderBasePrice != tafritimFixedPrice ? 'red' : ''}
+      style:background={tafritimFixedPrice !== null && customer.orderBasePrice != tafritimFixedPrice ? '#ffeaea' : ''}
+      autocomplete="off"
+    />
+    {#if tafritimFixedPrice !== null && customer.orderBasePrice != tafritimFixedPrice}
+      <span class="input-warning">
+        מחיר זה שונה מהמחיר הקבוע של התפריט ({tafritimFixedPrice} ש"ח)
+      </span>
     {/if}
-    {#if !customer.dateOfSuplay}
-     <a href="#lachmajun-dateOfSuplay" class="highlight-link"> <span class="buttonSpan" >תאריך אספקה -</span></a>
-    {/if}
-    {#if !customer.houerOfSuplay}
-      <a href="#lachmajun-houerOfSuplay" class="highlight-link"> <span class="buttonSpan" >שעת אספקה</span></a>
-    {/if}
-
-
-    </button>
-    {/if}
-    <button onclick={printPage}>הדפס</button>
   </div>
+
+  <!-- Total Price (readonly) -->
+  <label class="sumLabel" for="orderPriceInput">סה״כ לתשלום:</label>
+  <input
+    id="orderPriceInput"
+    class="sumInput"
+    type="number"
+    bind:value={orderPrice}
+    placeholder="סה״כ לתשלום"
+    readonly
+  />
+
+  <!-- Delivery Price -->
+  <label class="sumLabel" for="orderDeliveryPriceInput">עלות משלוח:</label>
+  <input
+    id="orderDeliveryPriceInput"
+    class="sumInput"
+    type="number"
+    bind:value={customer.orderDeliveryPrice}
+    min="0"
+    placeholder="עלות משלוח"
+    autocomplete="off"
+  />
+
+  <!-- Grand Total (readonly) -->
+  <label class="sumLabel" for="orderTotalPriceInput">סה״כ כולל משלוח:</label>
+  <input
+    id="orderTotalPriceInput"
+    class="sumInput"
+    type="number"
+    bind:value={orderTotalPrice}
+    placeholder="סה״כ כולל משלוח"
+    readonly
+  />
+
+  <!-- Comments -->
+  <label class="sumLabel" for="orderCommentsInput" style="grid-column: 1/3;">הערות:</label>
+  <textarea
+    id="orderCommentsInput"
+    class="sumTextarea"
+    bind:value={customer.comments}
+    rows="2"
+    placeholder="הערות"
+    style="grid-column: 1/3;"
+  ></textarea>
 </div>
 
+<div class="buttons sumAcount-buttons">
+  {#if customer.dateOfSuplay && customer.houerOfSuplay && customer.deliveryPlace}
+    <button type="button" onclick={sendOrder}>שמור הזמנה</button>
+  {:else}
+    <button type="button" class="missing-fields-btn">
+      נא למלא את כל השדות:
+      {#if !customer.deliveryPlace}
+        <a href="#missingDetails" class="highlight-link"> <span class="buttonSpan">כתובת אספקה -</span></a>
+      {/if}
+      {#if !customer.dateOfSuplay}
+        <a href="#lachmajun-dateOfSuplay" class="highlight-link"> <span class="buttonSpan">תאריך אספקה -</span></a>
+      {/if}
+      {#if !customer.houerOfSuplay}
+        <a href="#lachmajun-houerOfSuplay" class="highlight-link"> <span class="buttonSpan">שעת אספקה</span></a>
+      {/if}
+    </button>
+  {/if}
+  <button type="button" onclick={printPage}>הדפס</button>
+</div>
+</div>
  <div class="orderCheckout">
   {#if sortedToDoOrder.length === 0}
     <h1>לא נוספו פריטים להזמנה</h1>
@@ -580,99 +634,35 @@ function sortOrderTable(key) {
       ? getSaladTotal(product)
       : ((Number(productQuantities[key]) || 0) * (Number(numberOfPuple) || 1)), -->
 <style>
-  .input-warning-wrap{
-    position: relative;
-  }
-.input-warning{
-  position: absolute;
-  top:50%;
-  left: 33%;
-  transform: translateY(-50%);
-  font-size: 0.85rem;
-  color: #b30000;
+  body {
+  font-family: Arial, sans-serif;
+  background: #f7f8fa;
 }
 
-.sumAcount {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  align-items: center;
-  gap: 12px 16px;
-  margin: 20px 0 35px 0;
-  padding: 18px 16px 12px 16px;
-  background: #fafbfc;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  direction: rtl;
+.form-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 14px;
   font-family: inherit;
-  font-size: 1.09em;
 }
 
-.sumLabel {
-  color: #222;
-  font-weight: bold;
-  margin-bottom: 0.15em;
-  letter-spacing: 0.04em;
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
 }
 
-.sumInput {
-  width: 85%;
-  min-width: 95px;
-  font-size: 1em;
-  padding: 7px 10px;
-  margin: 2px 0;
-  border: 1.5px solid #ccc;
-  border-radius: 5px;
-  background: #fff;
-  transition: border-color 0.18s;
-}
-.sumInput:focus {
-  border-color: #007acc;
-  outline: none;
-  background: #f8fbff;
+h2 {
+  margin-top: 30px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 5px;
 }
 
-.sumTextarea {
-  width: 97.5%;
-  min-width: 120px;
-  padding: 7px 12px;
-  border: 1.5px solid #ccc;
-  border-radius: 5px;
-  background: #fff;
-  font-size: 1em;
-  resize: vertical;
-  margin-bottom: 0.3em;
-}
-
-.radio-group {
-  display: flex;
-  gap: 24px;
-  align-items: center;
-}
-
-.radio-option {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-weight: normal;
-  font-size: 1em;
-}
-
-.radio-option input[type="radio"] {
-  accent-color: #007acc;
-  margin-left: 4px;
-  cursor: pointer;
-}
-
-  .form-container {
-    max-width:1200px;
-    margin: 0 auto;
-    padding: 20px;
-    background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    font-family: Arial, sans-serif;
-  }
-  input::placeholder, textarea::placeholder, select {
+input::placeholder,
+textarea::placeholder,
+select {
   direction: rtl;
 }
 
@@ -683,10 +673,9 @@ select {
   border: 1px solid #ccc;
   border-radius: 5px;
   background: #fff;
-  font-family: Arial, sans-serif;
   font-size: 14px;
   appearance: none;
-  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23000' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23000' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: left 10px center;
   background-size: 10px 6px;
@@ -699,120 +688,239 @@ select:focus {
   box-shadow: 0 0 5px rgba(0,123,255,0.5);
 }
 
-  h1 {
-    text-align: center;
-    margin-bottom: 20px;
-  }
+/* =========================
+   SumAcount (Order Summary)
+   ========================= */
+.sumAcount,
+.sumAcount.upgradedSumAcount {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: center;
+  gap: 18px 30px;
+  margin: 30px auto 20px auto;
+  padding: 28px 30px 22px 30px;
+  background: #fff;
+  border: 1.5px solid #ddd;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px #0001;
+  max-width: 680px;
+  font-size: 1.14em;
+  direction: rtl;
+  font-family: inherit;
+}
 
-  h2 {
-    margin-top: 30px;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 5px;
-  }
-  tr{
-    display: grid;
-    grid-template-columns: 1.5fr 0.7fr 0.4fr 0.4fr 0.4fr 1.5fr 0.4fr;
-  }
+.sumAcount .sumLabel {
+  color: #242424;
+  font-weight: 600;
+  margin-bottom: 0.15em;
+  letter-spacing: 0.04em;
+}
 
-  input[type='number'] {
-    width: 70%;
-    padding: min(8px, 1vw);
-    margin: 5px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
-  input[type='text'], input[type='date'], input[type='time'] {
-    width: 90%;
-    height: 1.5rem;
-    padding: 8px;
-    margin: 5px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
+.sumAcount .sumInput,
+.sumAcount .sumTextarea {
+  box-shadow: 0 1px 3px #0001;
+  border: 1.5px solid #ccc;
+  border-radius: 8px;
+  padding: 9px 13px;
+  font-size: 1em;
+  margin: 2px 0 10px 0;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  width: 96%;
+  background: #fff;
+}
 
-  textarea {
-    resize: vertical;
-  }
+.sumAcount .sumInput:focus,
+.sumAcount .sumTextarea:focus {
+  border-color: #007acc;
+  background: #f6fafd;
+  outline: none;
+}
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 20px;
-  }
+.sumAcount .radio-group {
+  display: flex;
+  gap: 38px;
+  align-items: center;
+}
 
-  th, td {
-    border: 1px solid #ccc;
-    padding: 8px;
-    text-align: right;
-  }
+.sumAcount .radio-option {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: normal;
+  font-size: 1em;
+}
 
-  th {
-    background: #f4f4f4;
-  }
+.sumAcount .radio-option input[type="radio"] {
+  accent-color: #007acc;
+  margin-left: 4px;
+  cursor: pointer;
+}
 
-  .buttons {
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-  }
+.sumAcount .radio-option span {
+  font-size: 1em;
+  font-weight: 500;
+}
 
-  button {
-    padding: 10px 20px;
-    border: none;
-    background: #000000;
-    color: white;
-    border: solid 1px #000000;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
+.sumAcount .input-warning-wrap {
+  position: relative;
+}
 
-  button:hover {
-    background: #ffffff;
-    border: solid 1px #000000;
-    color: #000000;
-  }
+.sumAcount .input-warning {
+  position: absolute;
+  top: 50%;
+  left: 110%;
+  transform: translateY(-50%);
+  font-size: 0.95em;
+  color: #b30000;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.sumAcount-buttons,
+.buttons {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 18px;
+}
+
+.sumAcount .missing-fields-btn {
+  background: #ffdbdb;
+  color: #a70000;
+  border: 1.5px solid #fbb;
+  font-weight: bold;
+  box-shadow: none;
+}
+.sumAcount .missing-fields-btn .buttonSpan {
+  color: #b30000;
+}
+
+/* ======================
+   Universal Inputs/Buttons
+   ====================== */
+input[type='number'],
+input[type='text'],
+input[type='date'],
+input[type='time'],
+textarea {
+  font-family: inherit;
+}
+
+input[type='number'] {
+  width: 70%;
+  padding: min(8px, 1vw);
+  margin: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+input[type='text'],
+input[type='date'],
+input[type='time'] {
+  width: 90%;
+  height: 1.5rem;
+  padding: 8px;
+  margin: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+button {
+  padding: 10px 20px;
+  border: none;
+  background: #000000;
+  color: white;
+  border: solid 1px #000000;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+button:hover {
+  background: #ffffff;
+  border: solid 1px #000000;
+  color: #000000;
+}
+button:active {
+  filter: brightness(0.92);
+}
+
+.buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* ======================
+   Table Styles
+   ====================== */
+.orderCheckout {
+  margin: 30px auto 100px auto;
+  padding: 20px;
+  background: #f9f9f9;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  max-width: 1200px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  direction: rtl;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: right;
+}
+
+th {
+  background: #f4f4f4;
+  cursor: pointer;
+  user-select: none;
+}
+
 tr.orderdItem {
   background-color: #b3e7ff; /* light blue background */
   font-weight: bold;
 }
-  
-.orderCheckout {
-    margin: 30px auto 100px auto;
-    padding: 20px;
-    background: #f9f9f9;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    max-width: 1200px;
-  }
-/* .suggestion-list {
+
+tr {
+  display: grid;
+  grid-template-columns: 1.5fr 0.7fr 0.4fr 0.4fr 0.4fr 1.5fr 0.4fr;
+}
+
+/* ======================
+   Suggestions, Alerts, Warnings
+   ====================== */
+.suggestion-list {
+  background: white;
+  border: 1px solid #ccc;
+  max-height: 200px;
+  max-width: 52%;
+  overflow-y: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  font-size: 0.95em;
+  font-family: inherit;
+  box-sizing: border-box;
+  z-index: 1000;
+  padding: 5px;
+  margin: 0;
+  list-style: none;
+  direction: rtl;
   position: absolute;
-  top: 100%;
   right: 0;
   left: 0;
-  background: white;
-  border: 1px solid #ccc;
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 1000;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-  direction: rtl;
-} */
-.suggestion-list {
- 
-  background: white;
-  border: 1px solid #ccc;
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 1000;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-  direction: rtl;
 }
+
 .suggestion-list li {
   padding: 8px 10px;
   cursor: pointer;
@@ -821,89 +929,139 @@ tr.orderdItem {
 .suggestion-list li:hover {
   background-color: #f0f0f0;
 }
+.suggestion-list li.selected {
+  background-color: #eee;
+  font-weight: bold;
+}
+
 .new-user-confirm {
   margin-top: 5px;
+  max-width: 50%;
   color: #b30000;
   background: #ffeaea;
   padding: 10px;
   border: 1px solid #ffbfbf;
   border-radius: 5px;
+  margin-bottom: 10px;
 }
-.sumAcount{
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  align-items: center;
-  gap: 10px;
-  margin: 20px 0;
-  padding: 15px;
-  background: #f4f4f4;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+
+.input-warning-wrap {
+  position: relative;
 }
- .suggestion-list li.selected {
-    background-color: #eee;
-    font-weight: bold;
-  }
+.input-warning {
+  position: absolute;
+  top: 50%;
+  left: 33%;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  color: #b30000;
+}
 
-  #lachmajun-dateOfSuplay,
-  #lachmajun-houerOfSuplay,
-  #missingDetails {
-    background-color: #fff5f5;
-    border: 1px solid red;
-    color: red;
-    font-weight: bold;
-    scroll-margin-top: 150px; /* Adjust this value as needed */
-  }
-.lachmajun-input {
-    padding: 8px;
-    border-radius: 4px;
-    border: 2px solid #ccc;
-    font-size: 16px;
-  }
-  .lachmajun-input.invalid {
-    border-color: red;
-    background-color: #ffe6e6;
-  }
-  .lachmajun-warning {
-    color: red;
-    margin-top: 4px;
-    font-weight: bold;
-  }
-  .lachmajun-hebrew-day {
-    margin-top: 8px;
-    font-size: 18px;
-    font-weight: bold;
-    color: #006400;
-  }
-
-   .highlight-link {
-    color: rgb(255, 255, 177);
-    text-decoration: underline;
-    font-weight: bold;
-    cursor: pointer;
-  }
-
-
-  button:hover .buttonSpan {
-    color: #000000;
-  }
-  button:hover .buttonSpan:hover {
-    color: #ff0000;
-  }
- 
-  @media print {
-    button, input, textarea {
-      display: none !important;
-    }
-    .form-container {
-      border: none;
-      box-shadow: none;
-      padding: 0;
-    }
-  }
-  .name-input-container {
+/* ======================
+   Misc. Styling
+   ====================== */
+.name-input-container {
   position: relative;
   width: 100%;
+}
+
+.highlight-link {
+  color: rgb(255, 255, 177);
+  text-decoration: underline;
+  font-weight: bold;
+  cursor: pointer;
+}
+button:hover .buttonSpan {
+  color: #000000;
+}
+button:hover .buttonSpan:hover {
+  color: #ff0000;
+}
+
+#lachmajun-dateOfSuplay,
+#lachmajun-houerOfSuplay,
+#missingDetails {
+  background-color: #fff5f5;
+  border: 1px solid red;
+  color: red;
+  font-weight: bold;
+  scroll-margin-top: 150px; /* Adjust as needed */
+}
+
+.lachmajun-input {
+  padding: 8px;
+  border-radius: 4px;
+  border: 2px solid #ccc;
+  font-size: 16px;
+}
+.lachmajun-input.invalid {
+  border-color: red;
+  background-color: #ffe6e6;
+}
+.lachmajun-warning {
+  color: red;
+  margin-top: 4px;
+  font-weight: bold;
+}
+.lachmajun-hebrew-day {
+  margin-top: 8px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #006400;
+}
+
+/* ======================
+   Print styles
+   ====================== */
+@media print {
+  button, input, textarea {
+    display: none !important;
+  }
+  .form-container {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+}
+
+/* ======================
+   Responsive design
+   ====================== */
+@media (max-width: 800px) {
+  .form-container,
+  .orderCheckout {
+    padding: 12px 2vw;
+    max-width: 95vw;
+    font-size: 1em;
+  }
+
+  .sumAcount,
+  .sumAcount.upgradedSumAcount {
+    max-width: 100vw;
+    padding: 18px 4vw;
+    font-size: 1em;
+    grid-template-columns: 1fr;
+    gap: 14px 0;
+  }
+  .sumAcount .sumInput,
+  .sumAcount .sumTextarea {
+    width: 100%;
+  }
+  tr {
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
+
+/* ======================
+   RTL tweaks
+   ====================== */
+body,
+.form-container,
+.sumAcount,
+.orderCheckout,
+.suggestion-list,
+table {
+  direction: rtl;
 }
 
 </style>
