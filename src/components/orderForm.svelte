@@ -5,7 +5,7 @@ import { blur, crossfade, draw, fade, fly, scale, slide} from 'svelte/transition
 import AddressAutocomplete from '../components/AddressAutocomplete.svelte';
 import DateTimePicker from '../components/DatePicker.svelte';
 import Tafritim from '../components/tafritim.svelte'
-import { Duration } from 'svelte-ux';
+import ScrollUp from '../components/ scrollUp.svelte';
 
 let customer = $state({
   firstName: '',
@@ -32,7 +32,7 @@ let customer = $state({
   orderDate: null,
   orderTime: null,
   orderType: null,
-  numOfSets: 1,
+  numOfSets: 15,
   orderBasePrice: null,
   orderDeliveryPrice: null,
   orderItems: [],
@@ -262,7 +262,7 @@ function sortOrderTable(key) {
   }
 }
 </script>
-
+<ScrollUp />
 <h1>הצעת מחיר / הזמנה</h1>
 <div class="form-container">
   <div class="toggleCustomesIndex">

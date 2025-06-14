@@ -14,7 +14,7 @@
   // ===============================
 
   let { Tafritim : TafritProp = 'TafritHofshi',
-        numberOfPuple = 1,
+        numberOfPuple = 15,
         selectedProducts = $bindable({}),
         productExecutedBy = $bindable({}),
         productQuantities = $bindable({}),
