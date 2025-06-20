@@ -1,7 +1,4 @@
 <script>
-  // Imports
-  // ===============================
-
   import { onMount } from 'svelte';
   import { blur, crossfade, draw, fade, fly, scale, slide } from 'svelte/transition';
   import { createEventDispatcher } from "svelte";
@@ -9,27 +6,36 @@
   import { derived } from 'svelte/store';
   import CategoryStatusWidget from '../components/CategoryStatusWidget.svelte';
 
-
-  // Props & State Initialization
-  // ===============================
-
-  let { Tafritim : TafritProp = 'TafritHofshi',
-        numberOfPuple = 15,
-        selectedProducts = $bindable({}),
-        productExecutedBy = $bindable({}),
-        productQuantities = $bindable({}),
-        } = $props();
+  // Props
+  let {
+    Tafritim: TafritProp = 'TafritHofshi',
+    numberOfPuple = 15,
+    selectedProducts = $bindable({}),
+    productExecutedBy = $bindable({}),
+    productQuantities = $bindable({}),
+  } = $props();
   const dispatch = createEventDispatcher();
 
-  let products = $state([]);
+  // Tafritim from DB
+  let tafritimArr = $state([]);
+  let Tafritim = $state(TafritProp);
   let error = $state();
-  let productComments = $state({});
+  let products = $state([]);
   let salad_quantity = $state([]);
+  let productComments = $state({});
 
-  // Data Fetch: Products & Salad Quantity
-  // ===============================
+  // Fetch tafritim_max table from server
+  onMount(async () => {
+    try {
+      const res = await fetch('https://dilen-digital.co.il/api/get_tafritim.php');
+      tafritimArr = await res.json();
+    } catch (e) {
+      error = e.message;
+    }
+  });
 
-  onMount(async () => { 
+  // Fetch products
+  onMount(async () => {
     try {
       const res = await fetch('https://dilen-digital.co.il/api/production.php');
       if (!res.ok) throw new Error('Failed to fetch products');
@@ -39,19 +45,66 @@
     }
   });
 
-  onMount(async () => { 
+  // Fetch salad quantities
+  onMount(async () => {
     try {
       const res = await fetch('https://dilen-digital.co.il/api/get_salad_quantity.php');
-      if (!res.ok) throw new Error('Failed to fetch products');
+      if (!res.ok) throw new Error('Failed to fetch salad quantities');
       salad_quantity = await res.json();
     } catch (e) {
       error = e.message;
     }
   });
 
-  // Helpers: Totals Calculation
-  // ===============================
+  // Tafrit Row (current menu selection)
+  let tafritRow = $derived.by(() =>
+    tafritimArr.find(t => t.sug_tafrit === Tafritim) || {}
+  );
 
+  // Max per category
+  let max = $derived.by(() => ({
+    'סלטים': tafritRow.max_salad,
+    'מנה ראשונה': tafritRow.max_starter,
+    'מנה ראשונה אופציה שניה': tafritRow.max_starter_option2,
+    'ממולאים': tafritRow.max_mimoulaim,
+    'ממולאים 1 לבחירה': tafritRow.max_mimoulaim_one,
+    'עיקרית': tafritRow.max_main,
+    'עיקרית 2': tafritRow.max_main_2,
+    'תוספות חמות': tafritRow.max_hot_sides,
+    'תוספות חמות בתוספת תשלום': tafritRow.max_hot_sides_paid,
+    'לחמים': tafritRow.max_bread,
+    'לחמים בתוספת תשלום': tafritRow.max_bread_paid
+  }));
+
+  // Category order
+  const categoryOrder = [
+    'סלטים',
+    'מנה ראשונה',
+    'ממולאים',
+    'ממולאים 1 לבחירה',
+    'עיקרית',
+    'עיקרית 2',
+    'תוספות חמות',
+    'תוספות חמות בתוספת תשלום',
+    'לחמים',
+    'לחמים בתוספת תשלום'
+  ];
+
+  // Grouped products
+  let groupedByCategory = $derived.by(() =>
+    products
+      .filter(p => p[Tafritim] === "1")
+      .reduce((acc, product) => {
+        if (!acc[product.category]) acc[product.category] = [];
+        acc[product.category].push(product);
+        return acc;
+      }, {})
+  );
+
+  // Price
+  let price = $derived.by(() => tafritRow.price);
+
+  // Helpers
   function getProductTotal(product, numberOfPuple, quantity) {
     if (!product) return '';
     const numPeople = Number(numberOfPuple) || 1;
@@ -80,233 +133,7 @@
     return (typeof val === 'string' && val) ? val : '';
   }
 
-  // Tafritim (Menu Type) Logic
-  // ===============================
-
-  let Tafritim = $state('TafritHofshi'); // Default value
-
- function selectTafrit(sugTafrit) {
-  switch (sugTafrit) {
-    case 'TafritHofshi':
-      return { price: null, sugTafrit, numberOfPuple };
-
-    case 'emtsa_shavua_1':
-      return {
-        price: 75,
-        max: {
-          'סלטים': 6,
-          'מנה ראשונה': 0,
-          'מנה ראשונה אופציה שניה': 0,
-          'ממולאים': 4,
-          'ממולאים 1 לבחירה': 0,
-          'עיקרית': 3,
-          'עיקרית 2': 1,
-          'תוספות חמות': 3,
-          'תוספות חמות בתוספת תשלום': 0,
-          'לחמים': 1,
-          'לחמים בתוספת תשלום': 3
-        },
-        sugTafrit, numberOfPuple
-      };
-
-    case 'emtsa_shavua_2':
-      return {
-        price: 85,
-        max: {
-          'סלטים': 7,
-          'מנה ראשונה': 0,
-          'מנה ראשונה אופציה שניה': 0,
-          'ממולאים': 4,
-          'ממולאים 1 לבחירה': 1,
-          'עיקרית': 3,
-          'עיקרית 2': 0,
-          'תוספות חמות': 3,
-          'תוספות חמות בתוספת תשלום': 1,
-          'לחמים': 1,
-          'לחמים בתוספת תשלום': 3
-        },
-        sugTafrit, numberOfPuple
-      };
-
-    case 'seudat_mitsva_1':
-      return {
-        price: 59,
-        max: {
-          'סלטים': 5,
-          'מנה ראשונה': 0,
-          'מנה ראשונה אופציה שניה': 0,
-          'ממולאים': 0,
-          'ממולאים 1 לבחירה': 0,
-          'עיקרית': 2,
-          'עיקרית 2': 2,
-          'תוספות חמות': 3,
-          'תוספות חמות בתוספת תשלום': 1,
-          'לחמים': 1,
-          'לחמים בתוספת תשלום': 3
-        },
-        sugTafrit, numberOfPuple
-      };
-
-    case 'seudat_mitsva_2':
-      return {
-        price: 75,
-        max: {
-          'סלטים': 6,
-          'מנה ראשונה': 1,
-          'מנה ראשונה אופציה שניה': 0,
-          'ממולאים': 2,
-          'ממולאים 1 לבחירה': 1,
-          'עיקרית': 1,
-          'עיקרית 2': 1,
-          'תוספות חמות': 2,
-          'תוספות חמות בתוספת תשלום': 1,
-          'לחמים': 1,
-          'לחמים בתוספת תשלום': 3
-        },
-        sugTafrit, numberOfPuple
-      };
-
-    case 'keytering_leshabat_chatan_erev':
-      return {
-        price: 90,
-        max: {
-          'סלטים': 7,
-          'מנה ראשונה': 2,
-          'מנה ראשונה אופציה שניה': 0,
-          'ממולאים': 2,
-          'ממולאים 1 לבחירה': 0,
-          'עיקרית': 2,
-          'עיקרית 2': 0,
-          'תוספות חמות': 3,
-          'תוספות חמות בתוספת תשלום': 0,
-          'לחמים': 0,
-          'לחמים בתוספת תשלום': 0
-        },
-        sugTafrit, numberOfPuple
-      };
-
-    case 'keytering_leshabat_chatan_yom':
-      return {
-        price: 80,
-        max: {
-          'סלטים': 7,
-          'מנה ראשונה': 0,
-          'מנה ראשונה אופציה שניה': 0,
-          'ממולאים': 4,
-          'ממולאים 1 לבחירה': 0,
-          'עיקרית': 2,
-          'עיקרית 2': 0,
-          'תוספות חמות': 3,
-          'תוספות חמות בתוספת תשלום': 0,
-          'לחמים': 0,
-          'לחמים בתוספת תשלום': 0
-        },
-        sugTafrit, numberOfPuple
-      };
-
-    case 'keytering_leseuda_shelishit':
-      return {
-        price: 65,
-        max: {
-          'סלטים': 4,
-          'מנה ראשונה': 0,
-          'מנה ראשונה אופציה שניה': 0,
-          'ממולאים': 0,
-          'ממולאים 1 לבחירה': 1,
-          'עיקרית': 1,
-          'עיקרית 2': 1,
-          'תוספות חמות': 1,
-          'תוספות חמות בתוספת תשלום': 0,
-          'לחמים': 1,
-          'לחמים בתוספת תשלום': 3
-        },
-        sugTafrit, numberOfPuple
-      };
-
-    case 'chatifim':
-      return {
-        price: 80,
-        max: {
-          'סלטים': 1,
-          'מנה ראשונה': 0,
-          'מנה ראשונה אופציה שניה': 0,
-          'ממולאים': 1,
-          'ממולאים 1 לבחירה': 0,
-          'עיקרית': 1,
-          'עיקרית 2': 0,
-          'תוספות חמות': 0,
-          'תוספות חמות בתוספת תשלום': 0,
-          'לחמים': 1,
-          'לחמים בתוספת תשלום': 0
-        },
-        sugTafrit, numberOfPuple
-      };
-
-    default:
-      return null;
-  }
-}
-
-  let TafritBuilder = $derived.by(() => selectTafrit(Tafritim));
-
-  // Category Display Order
-  // ===============================
-
-        const categoryOrder = [
-          'סלטים',
-          'מנה ראשונה',
-          'ממולאים',
-          'ממולאים 1 לבחירה',
-          'עיקרית',
-          'עיקרית 2',
-          'תוספות חמות',
-          'תוספות חמות בתוספת תשלום',
-          'לחמים',
-          'לחמים בתוספת תשלום'
-        ];
-
-
-  // Derived: Grouped Products by Category
-  // ===============================
-
-  let groupedByCategory = $derived.by(() =>
-    products
-      .filter(p => p[Tafritim] === "1")
-      .reduce((acc, product) => {
-        if (!acc[product.category]) acc[product.category] = [];
-        acc[product.category].push(product);
-        return acc;
-      }, {})
-  );
-
-  // Derived: 25 People Check
-  // ===============================
-
-  let checkIfMoreOrLessThen25 = $derived.by(() => Number(numberOfPuple) >= 25);
-
-  // Event Handlers: Tafritim (Menu) Change
-  // ===============================
-
-  function handleTafritimChange(newValue) {
-    const anyChecked = Object.values(selectedProducts).some(Boolean);
-    if (anyChecked && Tafritim !== newValue) {
-      if (
-        !confirm(
-          "בחירת סוג תפריט אחר תאפס את כל הבחירות הקודמות.\nלהמשיך ולאפס את כל הבחירות?"
-        )
-      ) return;
-      selectedProducts = {};
-      productQuantities = {};
-      productComments = {};
-      productExecutedBy = {};
-    }
-    Tafritim = newValue;
-    dispatch('MachirMana', selectTafrit(newValue));
-  }
-
-  // Helpers: Collect Selected Order Items
-  // ===============================
-
+  // Derived: Selected order items
   function getSelectedOrderItems() {
     let result = [];
     for (let key in selectedProducts) {
@@ -324,153 +151,87 @@
           ExecutedBy: productExecutedBy[key] || '',
           comment: productComments[key] || '',
           total: category === 'סלטים'
-          ? getSaladTotal(product)
-          : Math.ceil((Number(productQuantities[key]) || 0) * (Number(numberOfPuple) || 1)),
+            ? getSaladTotal(product)
+            : Math.ceil((Number(productQuantities[key]) || 0) * (Number(numberOfPuple) || 1)),
         });
       }
     }
     return result;
   }
-  
-        let selectedOrderItems = $derived.by(() => getSelectedOrderItems());
+  let selectedOrderItems = $derived.by(() => getSelectedOrderItems());
 
+  // Menu change handler
+  function handleTafritimChange(newValue) {
+    const anyChecked = Object.values(selectedProducts).some(Boolean);
+    if (anyChecked && Tafritim !== newValue) {
+      if (
+        !confirm(
+          "בחירת סוג תפריט אחר תאפס את כל הבחירות הקודמות.\nלהמשיך ולאפס את כל הבחירות?"
+        )
+      ) return;
+      selectedProducts = {};
+      productQuantities = {};
+      productComments = {};
+      productExecutedBy = {};
+    }
+    Tafritim = newValue;
+    dispatch('MachirMana', tafritRow);
+  }
 
-        // Dispatch Order Item Changes to Parent
-        // ===============================
+  // 25 or more
+  let checkIfMoreOrLessThen25 = $derived.by(() => Number(numberOfPuple) >= 25);
 
-        $effect(() => {
-          dispatch('updateOrderItems', { items: selectedOrderItems });
-        });
+  // Status per category
+  let categoriesStatus = $derived.by(() => {
+    if (!max) return { perCategory: {}, allCategoriesFull: false };
+    let perCategory = {};
+    let allFull = true;
+    for (const category of categoryOrder) {
+      if (!groupedByCategory[category]) continue;
+      const maxVal = max[category] ?? Infinity;
+      const selectedCount = groupedByCategory[category].filter(
+        p => selectedProducts[`${category}_${p.name}`]
+      ).length;
+      const isFull = maxVal !== Infinity && selectedCount >= maxVal;
+      if (!isFull) allFull = false;
+      perCategory[category] = {
+        category,
+        selectedCount,
+        max: maxVal,
+        isFull,
+        status: maxVal === Infinity
+          ? `נבחרו ${selectedCount} מתוך ∞`
+          : `נבחרו ${selectedCount} מתוך ${maxVal}` + (isFull ? " (מלא)" : "")
+      };
+    }
+    return {
+      perCategory,
+      allCategoriesFull: allFull
+    };
+  });
 
-        // check if order complete
-        // ===============================
-            let categoriesStatus = $derived.by(() => {
-        // null safety
-        if (!TafritBuilder?.max) return { perCategory: {}, allCategoriesFull: false };
-
-        let perCategory = {};
-        let allFull = true;
-
-        for (const category of categoryOrder) {
-          // Only calculate for categories present in groupedByCategory and with a max in TafritBuilder
-          if (!groupedByCategory[category]) continue;
-          const max = TafritBuilder.max[category] ?? Infinity;
-          const selectedCount = groupedByCategory[category].filter(
-            p => selectedProducts[`${category}_${p.name}`]
-          ).length;
-          const isFull = max !== Infinity && selectedCount >= max;
-          if (!isFull) allFull = false;
-
-          perCategory[category] = {
-            category,
-            selectedCount,
-            max,
-            isFull,
-            status: max === Infinity
-              ? `נבחרו ${selectedCount} מתוך ∞`
-              : `נבחרו ${selectedCount} מתוך ${max}` + (isFull ? " (מלא)" : "")
-          };
-        }
-
-        return {
-          perCategory,
-          allCategoriesFull: allFull
-        };
-      });
-
-
+  // Update parent
+  $effect(() => {
+    dispatch('updateOrderItems', { items: selectedOrderItems });
+  });
 </script>
 
-<!-- ===============================
-     Tafritim (Menu) Selection Radios
-=============================== -->
+<!-- Tafritim Menu Radios -->
 <div class="tafritim-container">
-  <label>
-    <input
-      type="radio"
-      name="tafritim"
-      checked={Tafritim === "TafritHofshi"}
-      onchange={() => handleTafritimChange('TafritHofshi')}
-    />
-    <span>תפריט חופשי</span>
-  </label>
-  <label>
-    <input
-      type="radio"
-      name="tafritim"
-      checked={Tafritim === "emtsa_shavua_1"}
-      onchange={() => handleTafritimChange('emtsa_shavua_1')}
-    />
-    <span>אמצע שבוע - 1</span>
-  </label>
-  <label>
-    <input
-      type="radio"
-      name="tafritim"
-      checked={Tafritim === "emtsa_shavua_2"}
-      onchange={() => handleTafritimChange('emtsa_shavua_2')}
-    />
-    <span>אמצע שבוע - 2</span>
-  </label>
-  <label>
-    <input
-      type="radio"
-      name="tafritim"
-      checked={Tafritim === "seudat_mitsva_1"}
-      onchange={() => handleTafritimChange('seudat_mitsva_1')}
-    />
-    <span>סעודת מצווה - 1</span>
-  </label>
-  <label>
-    <input
-      type="radio"
-      name="tafritim"
-      checked={Tafritim === "seudat_mitsva_2"}
-      onchange={() => handleTafritimChange('seudat_mitsva_2')}
-    />
-    <span>סעודת מצווה - 2</span>
-  </label>
-  <label>
-    <input
-      type="radio"
-      name="tafritim"
-      checked={Tafritim === "keytering_leshabat_chatan_erev"}
-      onchange={() => handleTafritimChange('keytering_leshabat_chatan_erev')}
-    />
-    <span>קייטרינג לשבת חתן - ערב</span>
-  </label>
-  <label>
-    <input
-      type="radio"
-      name="tafritim"
-      checked={Tafritim === "keytering_leshabat_chatan_yom"}
-      onchange={() => handleTafritimChange('keytering_leshabat_chatan_yom')}
-    />
-    <span>קייטרינג לשבת חתן - יום</span>
-  </label>
-  <label>
-    <input
-      type="radio"
-      name="tafritim"
-      checked={Tafritim === "keytering_leseuda_shelishit"}
-      onchange={() => handleTafritimChange('keytering_leseuda_shelishit')}
-    />
-    <span>קייטרינג לסעודה שלישית</span>
-  </label>
-  <label>
-    <input
-      type="radio"
-      name="tafritim"
-      checked={Tafritim === "chatifim"}
-      onchange={() => handleTafritimChange('chatifim')}
-    />
-    <span>חטיפים</span>
-  </label>
+  {#each tafritimArr as t}
+    <label>
+      <input
+        type="radio"
+        name="tafritim"
+        checked={Tafritim === t.sug_tafrit}
+        onchange={() => handleTafritimChange(t.sug_tafrit)}
+      />
+      <span>{t.sug_tafrit}</span>
+    </label>
+  {/each}
 </div>
 
-<!-- ===============================
-     People Count and Price Info
-=============================== -->
+<!-- People Count and Price Info -->
 <div class="people-input-box">
   <div class="people-input-wrap">
     <label for="people-count" class="people-label">
@@ -491,15 +252,13 @@
     <p class="price-info">
       <span>מחיר מנה נבחרת:</span>
       <span class="price-value">
-        {TafritBuilder.price ? TafritBuilder.price + ' ש"ח' : '— ללא מחיר —'}
+        {price ? price + ' ש"ח' : '— ללא מחיר —'}
       </span>
     </p>
   </div>
 </div>
 
-<!-- ===============================
-     Main Table: Product Categories
-=============================== -->
+<!-- Main Table: Product Categories -->
 {#key Tafritim}
   <div class="tatritimContainer" in:fly={{Duration:1000, y:-200}}>
     {#each categoryOrder as category}
@@ -509,7 +268,7 @@
           - נבחרו:
           {groupedByCategory[category].filter(p => selectedProducts[`${category}_${p.name}`]).length}
           מתוך:
-          {TafritBuilder?.max?.[category] ?? '∞'}
+          {max[category] ?? '∞'}
         </h3>
         <table style="width:100%; margin-bottom:16px;">
           <thead>
@@ -529,7 +288,7 @@
                 !selectedProducts[`${category}_${product.name}`] &&
                 groupedByCategory[category].filter(
                   p => selectedProducts[`${category}_${p.name}`]
-                ).length >= (TafritBuilder?.max?.[category] ?? Infinity)
+                ).length >= (max[category] ?? Infinity)
                   ? 'disabled'
                   : ''
               }>
@@ -616,7 +375,7 @@
   </div>
 {/key}
 
-                  <CategoryStatusWidget {categoriesStatus}/>
+<CategoryStatusWidget {categoriesStatus}/>
 
 <style>
   .categories-status-summary {

@@ -36,6 +36,7 @@ onMount(() => {
             <li in:fly={{ y: -50, duration: 500, delay: 350, easing:cubicOut}}><a href="/allCustomers">לקוחות קיימים</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 400, easing:cubicOut}}><a href="/production">הוראות ייצור</a></li>
             <li in:fly={{ y: -50, duration: 500, delay: 450, easing:cubicOut}}><a href="/salad_quantity">סלט-כמויות</a></li>
+            <li in:fly={{ y: -50, duration: 500, delay: 500, easing:cubicOut}}><a href="/tafritim_admin">ניהול תפריט</a></li>
         </ul>
         {:else}
         <ul out:fly={{ y: 35, duration: 150,  }} in:fly={{ y: 35, duration: 300, delay: 400 }}>
