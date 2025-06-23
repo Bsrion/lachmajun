@@ -90,6 +90,18 @@
     'לחמים בתוספת תשלום'
   ];
 
+const tafritTypes = [
+  { value: 'TafritHofshi', label: 'תפריט חופשי' },
+  { value: 'emtsa_shavua_1', label: 'אמצע שבוע - 1' },
+  { value: 'emtsa_shavua_2', label: 'אמצע שבוע - 2' },
+  { value: 'seudat_mitsva_1', label: 'סעודת מצווה - 1' },
+  { value: 'seudat_mitsva_2', label: 'סעודת מצווה - 2' },
+  { value: 'keytering_leshabat_chatan_erev', label: 'קייטרינג לשבת חתן - ערב' },
+  { value: 'keytering_leshabat_chatan_yom', label: 'קייטרינג לשבת חתן - יום' },
+  { value: 'keytering_leseuda_shelishit', label: 'קייטרינג לסעודה שלישית' },
+  { value: 'chatifim', label: 'חטיפים' }
+];
+
   // Grouped products
   let groupedByCategory = $derived.by(() =>
     products
@@ -218,18 +230,19 @@
 
 <!-- Tafritim Menu Radios -->
 <div class="tafritim-container">
-  {#each tafritimArr as t}
+  {#each tafritTypes as tafrit}
     <label>
       <input
         type="radio"
         name="tafritim"
-        checked={Tafritim === t.sug_tafrit}
-        onchange={() => handleTafritimChange(t.sug_tafrit)}
+        checked={Tafritim === tafrit.value}
+        onchange={() => handleTafritimChange(tafrit.value)}
       />
-      <span>{t.sug_tafrit}</span>
+      <span>{tafrit.label}</span>
     </label>
   {/each}
 </div>
+
 
 <!-- People Count and Price Info -->
 <div class="people-input-box">

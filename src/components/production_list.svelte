@@ -86,6 +86,7 @@
       less_than_25: '',
       production_instraction: '',
       category: '',
+      TafritHofshi: false, // ← add this!
       emtsa_shavua_1: false,
       emtsa_shavua_2: false,
       seudat_mitsva_1: false,
@@ -142,27 +143,28 @@
 {#if products.length}
   <table>
     <thead>
-      <tr>
-        <th onclick={() => sortTable('product_id')}>מס' מזהה</th>
-        <th onclick={() => sortTable('name')}>שם מוצר</th>
-        <th onclick={() => sortTable('name_arabic')}>שם בערבית</th>
-        <th onclick={() => sortTable('category')}>קטגוריה</th>
-        <th onclick={() => sortTable('less_than_25')}>פחות מ-25</th>
-        <th onclick={() => sortTable('above_25')}>מעל 25</th>
-        <th onclick={() => sortTable('production_instraction')}>הוראת ייצור</th>
-        <th onclick={() => sortTable('emtsa_shavua_1')}>אמצע שבוע 1</th>
-        <th onclick={() => sortTable('emtsa_shavua_2')}>אמצע שבוע 2</th>
-        <th onclick={() => sortTable('seudat_mitsva_1')}>סעודת מצווה 1</th>
-        <th onclick={() => sortTable('seudat_mitsva_2')}>סעודת מצווה 2</th>
-        <th onclick={() => sortTable('keytering_leshabat_chatan_erev')}>קייטרינג לשבת חתן ערב</th>
-        <th onclick={() => sortTable('keytering_leshabat_chatan_yom')}>קייטרינג לשבת חתן יום</th>
-        <th onclick={() => sortTable('keytering_leseuda_shelishit')}>קייטרינג לסעודה שישית</th>
-        <th onclick={() => sortTable('chatifim')}>חטיפים</th>
-        <th onclick={() => sortTable('sensitiviti')}>רגישויות</th>       
-        <th onclick={() => sortTable('comment')}>הערות</th>
-        <th></th>
-      </tr>
-    </thead>
+  <tr>
+    <th onclick={() => sortTable('product_id')}>מס' מזהה</th>
+    <th onclick={() => sortTable('name')}>שם מוצר</th>
+    <th onclick={() => sortTable('name_arabic')}>שם בערבית</th>
+    <th onclick={() => sortTable('category')}>קטגוריה</th>
+    <th onclick={() => sortTable('less_than_25')}>פחות מ-25</th>
+    <th onclick={() => sortTable('above_25')}>מעל 25</th>
+    <th onclick={() => sortTable('production_instraction')}>הוראת ייצור</th>
+    <th onclick={() => sortTable('TafritHofshi')}>תפריט חופשי</th>
+    <th onclick={() => sortTable('emtsa_shavua_1')}>אמצע שבוע 1</th>
+    <th onclick={() => sortTable('emtsa_shavua_2')}>אמצע שבוע 2</th>
+    <th onclick={() => sortTable('seudat_mitsva_1')}>סעודת מצווה 1</th>
+    <th onclick={() => sortTable('seudat_mitsva_2')}>סעודת מצווה 2</th>
+    <th onclick={() => sortTable('keytering_leshabat_chatan_erev')}>קייטרינג לשבת חתן ערב</th>
+    <th onclick={() => sortTable('keytering_leshabat_chatan_yom')}>קייטרינג לשבת חתן יום</th>
+    <th onclick={() => sortTable('keytering_leseuda_shelishit')}>קייטרינג לסעודה שישית</th>
+    <th onclick={() => sortTable('chatifim')}>חטיפים</th>
+    <th onclick={() => sortTable('sensitiviti')}>רגישויות</th>       
+    <th onclick={() => sortTable('comment')}>הערות</th>
+    <th></th>
+  </tr>
+</thead>
     <tbody>
       {#each products as row (row.product_id || row.temp_id)}
         <tr
@@ -189,6 +191,10 @@
             </td>
             <td>
               <input type="text" bind:value={row.production_instraction} onclick={() => isRowClick = true} />
+            </td>
+              <!-- Inside the edit block -->
+            <td>
+              <input type="text" bind:value={row.TafritHofshi} onclick={() => isRowClick = true} />
             </td>
             <td>
               <input type="text" bind:value={row.emtsa_shavua_1} onclick={() => isRowClick = true} />
@@ -235,6 +241,7 @@
             <td>{row.less_than_25}</td>
             <td>{row.above_25}</td>
             <td>{row.production_instraction}</td>
+            <td>{row.TafritHofshi}</td>
             <td>{row.emtsa_shavua_1}</td>
             <td>{row.emtsa_shavua_2}</td>
             <td>{row.seudat_mitsva_1}</td>
