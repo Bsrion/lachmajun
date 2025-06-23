@@ -13,6 +13,8 @@
   let showForm = $state(false);
   let selectedIndex = $state(0);
   let tableRef;
+  let deleteWarningId = null;
+
 
   // Fetch customers
   async function fetchCustomers() {
@@ -151,6 +153,76 @@
   $effect(() => {
     debouncedFetch();
   });
+  async function handleSaveCustomer(e) {
+  const updated = e.detail.updatedCustomer;
+  // Normalize: trim and lowercase for comparison
+  const newFirst = updated.firstName.trim().toLowerCase();
+  const newLast = updated.lastName.trim().toLowerCase();
+
+  // Check for existing customer with same first + last name (but different id)
+  const duplicate = customers.find(
+    c =>
+      c.id !== updated.id &&
+      c.firstName.trim().toLowerCase() === newFirst &&
+      c.lastName.trim().toLowerCase() === newLast
+  );
+
+  if (duplicate) {
+    const confirmed = window.confirm(
+      `לקוח עם השם "${updated.firstName} ${updated.lastName}" כבר קיים.\nהאם אתה בטוח שברצונך לשמור?`
+    );
+    if (!confirmed) return; // User canceled
+  }
+  updateCustomerInList(updated);
+  showForm = false;
+  selectedCustomer = null;
+  await fetchCustomers(); // Refresh list
+}
+
+// Single click: Shift required, else show warning
+async function tryDeleteCustomer(event, customer) {
+  if (!event.shiftKey) {
+    deleteWarningId = customer.id;
+    setTimeout(() => {
+      if (deleteWarningId === customer.id) deleteWarningId = null;
+    }, 2000);
+    return;
+  }
+  deleteWarningId = null;
+  await reallyDeleteCustomer(customer);
+}
+
+// Double click: Show confirm always
+async function confirmDeleteCustomer(event, customer) {
+  deleteWarningId = null; // Remove any message
+  // Optional: prevent default behavior (browser may select text)
+  event.preventDefault();
+
+  // Check for orders
+  const response = await fetch(`https://dilen-digital.co.il/api/orders_count.php?customer_id=${customer.id}`);
+  const data = await response.json();
+  if (data.count > 0) {
+    // Optional: show a warning message instead of alert
+    // deleteWarningId = customer.id; return;
+    alert('לא ניתן למחוק לקוח עם הזמנות קיימות.');
+    return;
+  }
+
+  if (!window.confirm(`האם למחוק את הלקוח "${customer.firstName} ${customer.lastName}"?`)) return;
+  await reallyDeleteCustomer(customer);
+}
+
+// The actual delete function
+async function reallyDeleteCustomer(customer) {
+  try {
+    await fetch(`https://dilen-digital.co.il/api/customers_delete.php?id=${customer.id}`);
+    customers = customers.filter(c => c.id !== customer.id);
+  } catch (err) {
+    // Optionally show error
+    // deleteWarningId = customer.id;
+  }
+}
+
 </script>
 
 <!-- UI -->
@@ -184,6 +256,9 @@
             <th><button type="button" onclick={() => sortBy('phone')}>טלפון {getSortSymbol('phone')}</button></th>
             <th><button type="button" onclick={() => sortBy('email')}>אימייל {getSortSymbol('email')}</button></th>
             <th><button type="button" onclick={() => sortBy('address')}>כתובת {getSortSymbol('address')}</button></th>
+            <th>מחק</th>
+            
+
           </tr>
         </thead>
         <tbody>
@@ -203,6 +278,24 @@
               <td>{customer.phone}</td>
               <td>{customer.email}</td>
               <td>{customer.address}</td>
+                <td>
+                <button
+              class="delete-btn"
+              title="Shift + מחק"
+              onclick={(e) => { e.stopPropagation(); tryDeleteCustomer(e, customer); }}
+              ondblclick={(e) => { e.stopPropagation(); confirmDeleteCustomer(e, customer); }}
+              onmouseleave={() => { if (deleteWarningId === customer.id) deleteWarningId = null; }}
+            >
+              🗑️ מחק
+            </button>
+              {#if deleteWarningId !== null && deleteWarningId !== customer.id}
+                <span class="delete-warning">לחץ Shift למחיקה</span>
+              {/if}
+
+              {#if deleteWarningId === customer.id}
+                <span class="delete-warning">לחץ Shift למחיקה</span>
+              {/if}
+            </td>
             </tr>
           {/each}
         </tbody>
@@ -213,16 +306,40 @@
 
 {#if showForm}
   <div class="edit-form-container">
-    <CustomerForm
-      customer={selectedCustomer}
-      isEdit={selectedCustomer !== null}
-      on:save={(e) => updateCustomerInList(e.detail.updatedCustomer)}
-      on:cancel={onCloseForm}
-    />
+  <CustomerForm
+  customer={selectedCustomer}
+  isEdit={selectedCustomer !== null}
+  on:save={handleSaveCustomer}
+  on:cancel={onCloseForm}
+/>
+
   </div>
 {/if}
 
 <style>
+  .delete-warning {
+  color: #e74c3c;
+  font-size: 0.9em;
+  margin-right: 0.5em;
+  margin-left: 0.5em;
+  vertical-align: middle;
+  font-weight: bold;
+}
+
+  .delete-btn {
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 0.25em 0.5em;
+  cursor: pointer;
+  font-size: 0.7em;
+  transition: background 0.2s;
+}
+.delete-btn:hover {
+  background: #c0392b;
+}
+
 /* Sticky search bar at top */
 .search-bar {
   display: flex;

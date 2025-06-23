@@ -5,7 +5,7 @@ import { blur, crossfade, draw, fade, fly, scale, slide} from 'svelte/transition
 import AddressAutocomplete from '../components/AddressAutocomplete.svelte';
 import DateTimePicker from '../components/DatePicker.svelte';
 import Tafritim from '../components/tafritim.svelte'
-import ScrollUp from '../components/a_ux/ scrollUp.svelte';
+import ScrollUp from './a_ux/scrollUp.svelte';
 
 let customer = $state({
   firstName: '',
