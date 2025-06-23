@@ -5,7 +5,7 @@ import { blur, crossfade, draw, fade, fly, scale, slide} from 'svelte/transition
 import AddressAutocomplete from '../components/AddressAutocomplete.svelte';
 import DateTimePicker from '../components/DatePicker.svelte';
 import Tafritim from '../components/tafritim.svelte'
-import ScrollUp from '../components/ scrollUp.svelte';
+import ScrollUp from '../components/a_ux/ scrollUp.svelte';
 
 let customer = $state({
   firstName: '',
@@ -563,11 +563,15 @@ function sortOrderTable(key) {
   <button type="button" onclick={printPage}>הדפס</button>
 </div>
 </div>
- <div class="orderCheckout">
+ <div class="orderCheckout special-final-section animate-pop">
+  <div class="summary-header">
+    <span class="celebrate-icon">🎉</span>
+    <h2>הזמנה סופית - <span>{customer.name}</span></h2>
+    <p class="summary-thankyou">תודה שבחרת בנו! הזמנתך התקבלה.</p>
+  </div>
   {#if sortedToDoOrder.length === 0}
     <h1>לא נוספו פריטים להזמנה</h1>
   {:else}
-    <h2 style="text-align: center;">הזמנה סופית - <span>{customer.name}</span></h2>
     <table>
       <thead>
   <tr style="cursor: pointer;">

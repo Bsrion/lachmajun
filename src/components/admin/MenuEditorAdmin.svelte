@@ -221,46 +221,62 @@
 </table>
 
 <style>
+
 .tafritim-admin-table {
-  width: 100%;
   border-collapse: collapse;
   margin-top: 20px;
   direction: rtl;
   background: #fff;
   box-shadow: 0 2px 12px #0001;
+  /* REMOVE table-layout: fixed to allow content-based sizing */
 }
+
 .tafritim-admin-table th,
 .tafritim-admin-table td {
   border: 1px solid #e2e2e2;
   padding: 7px 6px;
   text-align: center;
   font-size: 15px;
-}
-.tafritim-admin-table th:first-child,
-.tafritim-admin-table td:first-child {
-  width: 30px;
-  min-width: 30px;
-  max-width: 30px;
   overflow: hidden;
 }
+
+/* ID column - small fixed size */
+.tafritim-admin-table th:first-child,
+.tafritim-admin-table td:first-child {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+}
+
+/* 2nd and 3rd columns - fit-content with limits */
 .tafritim-admin-table th:nth-child(2),
 .tafritim-admin-table td:nth-child(2),
 .tafritim-admin-table th:nth-child(3),
 .tafritim-admin-table td:nth-child(3) {
-  width: 1%;
+  width: fit-content;
+  min-width: 125px;
+  max-width: 200px;
   white-space: nowrap;
 }
+
+/* All remaining columns share remaining space equally */
+.tafritim-admin-table th:not(:nth-child(-n+3)),
+.tafritim-admin-table td:not(:nth-child(-n+3)) {
+  width: auto;
+}
+
+/* Input styling */
 .tafritim-admin-table input[type="text"],
 .tafritim-admin-table input[type="number"] {
-  width: 90%;
-  min-width: 25px;
-  max-width: 120px;
+  width: 85%;
   padding: 2px 5px;
-  border: 1px solid #ccc;
+  border: 0.5px solid #ccc;
   border-radius: 5px;
   text-align: center;
   font-size: 15px;
 }
+
+/* Button styling */
 .tafritim-admin-table button {
   padding: 4px 13px;
   border-radius: 6px;
@@ -274,10 +290,14 @@
 .tafritim-admin-table button:hover {
   background: #005fa3;
 }
+
+/* Error message */
 .error {
   color: red;
   margin: 14px 0;
   font-weight: bold;
   text-align: center;
 }
+
+
 </style>

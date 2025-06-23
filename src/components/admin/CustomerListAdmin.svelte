@@ -1,6 +1,6 @@
 <script>
   import { onMount, createEventDispatcher } from 'svelte';
-  import CustomerForm from '../lib/CustomerForm.svelte';
+  import CustomerForm from '../../lib/CustomerForm.svelte';
 
   const { customer = null, isEdit = false } = $props();
   const dispatch = createEventDispatcher();
