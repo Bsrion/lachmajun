@@ -8,8 +8,8 @@
 
 	let message = $state('');
 	let errorDetails = $state('');
+	let showPassword = $state(false);
 
-	
 
 	let formData = $state({
 		firstName: '',
@@ -116,10 +116,19 @@
 		<input bind:value={formData.userName} placeholder="שם משתמש (אם רלוונטי)" />
 	</label>
 
-	<label>
+		<label>
 		<span>סיסמה</span>
-		<input type="password" bind:value={formData.userPassword} placeholder="סיסמה" />
-	</label>
+		<input
+			type={showPassword ? 'text' : 'password'}
+			bind:value={formData.userPassword}
+			placeholder="סיסמה"
+		/>
+		<label style="flex-direction: row; align-items: center; gap: 7px; font-weight:400; margin-bottom: 0.5rem;">
+			<input type="checkbox" bind:checked={showPassword} style="margin-right: 4px;" />
+			הצג סיסמה
+		</label>
+		</label>
+
 
 	<button type="submit">{isEdit ? 'עדכן' : 'שמור'}</button>
 
