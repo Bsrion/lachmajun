@@ -1,13 +1,13 @@
 ---
-  import CustomerForm from '../lib/CustomerForm.svelte'
 import Layout from '../layouts/Layout.astro';
 import Heder_hybid from '../components/header.svelte';
-
+import PageLayout from '../lib/PageLayout.svelte';
+import CustomerForm from '../lib/CustomerForm.svelte';
 ---
 
 <Layout>
-			<Heder_hybid client:visible/>
-
-  <CustomerForm client:load/>
-
+  <Heder_hybid client:visible/>
+        <PageLayout client:load>
+    <CustomerForm client:load/>
+        </PageLayout>
 </Layout>
