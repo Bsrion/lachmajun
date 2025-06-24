@@ -1,4 +1,4 @@
-<!-- <script>
+<script>
   import { userPermissions } from './authStore.svelte.js';
   const { page = '', requireEdit = false } = $props();
 
@@ -16,4 +16,4 @@
   <slot />
 {:else}
   <div style="color: #e74c3c; font-weight: bold;">אין לך הרשאה לעמוד זה.</div>
-{/if} -->
+{/if}

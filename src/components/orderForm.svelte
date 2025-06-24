@@ -6,6 +6,9 @@ import AddressAutocomplete from '../components/AddressAutocomplete.svelte';
 import DateTimePicker from '../components/DatePicker.svelte';
 import Tafritim from '../components/tafritim.svelte'
 import ScrollUp from './a_ux/scrollUp.svelte';
+  import { currentUser, userPermissions } from '../lib/authStore.js';
+
+
 
 let customer = $state({
   firstName: '',
@@ -261,6 +264,35 @@ function sortOrderTable(key) {
     sortAscOrderTable = true;
   }
 }
+
+
+  // Timeout in ms (20 minutes)
+  const INACTIVITY_LIMIT = 20 * 60 * 1000;
+  let inactivityTimeout;
+
+  function resetTimer() {
+    clearTimeout(inactivityTimeout);
+    inactivityTimeout = setTimeout(logout, INACTIVITY_LIMIT);
+  }
+
+  function logout() {
+    currentUser.set(null);
+    userPermissions.set([]);
+    // Optional: window.location.reload(); // Force re-render/login
+  }
+
+  // Listen to any activity
+  onMount(() => {
+    const events = ['mousemove', 'keydown', 'mousedown', 'scroll', 'touchstart'];
+    events.forEach(event => window.addEventListener(event, resetTimer));
+    resetTimer(); // Start timer on mount
+
+    return () => {
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+      clearTimeout(inactivityTimeout);
+    };
+  });
+
 </script>
 <ScrollUp />
 <h1>הצעת מחיר / הזמנה</h1>

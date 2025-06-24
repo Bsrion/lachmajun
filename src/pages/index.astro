@@ -2,6 +2,8 @@
 import Layout from '../layouts/Layout.astro';
 import "../styles/global.css";
 import Heder_hybid from '../components/header.svelte';
+import Login from '../lib/Login.svelte';
+import UserConnected from '../lib/UserConnected.svelte';
 
 
 // Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
@@ -14,9 +16,11 @@ import Heder_hybid from '../components/header.svelte';
 
 <Layout>
 			<Heder_hybid client:visible/>
-			<a href="/Neworder"><img src="/logo_pasha.svg" alt="Astro Logo" class="logo" />
+			<a href="/newOrder"><img src="/logo_pasha.svg" alt="Astro Logo" class="logo" />
 			<h1 class=" title">מערכת לניהול הזמנות</h1></a>
-			<p></p>
+			  <UserConnected client:visible />
+			  
+			<Login client:visible/>
 </Layout>
 
 
@@ -31,7 +35,7 @@ body {
 
 	}
 	.logo {
-		width: 800px;
+		width: 550px;
 		height: auto;
 		display: block;
 		margin: 0 auto;
@@ -42,13 +46,13 @@ body {
 	.title{
 		text-align: center;
 		max-width: fit-content;
-		font-size: 1.75rem;
+		font-size: 1.5rem;
 		color: #ffffff;
 		opacity: 0;
 		font-weight: 500;
 		font-family: 'Arial', sans-serif;
-		margin: 45px auto;
-		padding: 10px 50px;
+		margin: 25px auto ;
+		padding: 5px 35px;
 		background-color: #ed1c24;
 		animation: pasha 0.5s ease-in-out 1.5s forwards;
 		border-radius: 10px;
@@ -60,7 +64,7 @@ body {
 		transform: translateY(120%) scale(0.3); opacity:0;
 	}
 	100% {
-		transform: translateY(30%) scale(1); opacity:1;
+		transform: translateY(20%) scale(1); opacity:1;
 	}
 	}
 	</style>
