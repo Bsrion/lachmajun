@@ -2,6 +2,7 @@
 import Layout from "../layouts/Layout.astro"
 import OrderForm from "../components/orderForm.svelte";
 import Heder_hybid from '../components/header.svelte';
+import PageLayout from '../lib/PageLayout.svelte';
 
 
 ---
@@ -10,5 +11,7 @@ import Heder_hybid from '../components/header.svelte';
 
 <Layout> 
 	<Heder_hybid client:visible/>
+            <PageLayout client:load>
     <OrderForm client:visible/>
+            </PageLayout>
 </Layout>   

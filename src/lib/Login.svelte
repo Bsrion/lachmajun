@@ -69,6 +69,7 @@
     display: flex;
     flex-direction: column;
     max-width: 340px;
+    min-width: 340px;
     margin: 3rem auto;
     padding: 2rem 2.5rem;
     background: #fff;

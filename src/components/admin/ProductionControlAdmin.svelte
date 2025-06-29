@@ -273,7 +273,7 @@
     background: #fff;
     box-shadow: 0 2px 8px #0001;
     margin-top: 2em;
-    margin-bottom: 5em;
+    margin-bottom: 7.5em;
   }
   th, td {
     border: 1px solid #d4d4d4;

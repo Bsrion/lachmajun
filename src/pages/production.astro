@@ -3,10 +3,14 @@ import Layout from '../layouts/Layout.astro';
 import Heder_hybid from '../components/header.svelte';
 import "../styles/global.css";
 import ProductionComponent from '../components/admin/ProductionControlAdmin.svelte';
+import PageLayout from '../lib/PageLayout.svelte';
+
 ---
 
 <Layout>
 <Heder_hybid client:visible />
+          <PageLayout client:load>
 <ProductionComponent client:only />
-
+        </PageLayout>
 </Layout>
+    

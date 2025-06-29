@@ -188,6 +188,18 @@ function showAll() {
     }
     return grouped;
   }
+  let expandedRows = $state(new Set());
+
+function toggleRowExpansion(orderNum) {
+  if (expandedRows.has(orderNum)) {
+    expandedRows.delete(orderNum);
+  } else {
+    expandedRows.add(orderNum);
+  }
+  // $state workaround: re-assign to trigger Svelte reactivity
+  expandedRows = new Set(expandedRows);
+}
+
 </script>
 
 
@@ -323,29 +335,43 @@ function showAll() {
                 <em>אין נתוני לקוח</em>
               {/if}
             </td>
-            <td>
-  {#if order.parsed_data?.items}
-    <ul class="order-items">
-      {#each Object.entries(groupItemsByCategory(order.parsed_data.items)) as [category, items]}
-        <li>
-          <strong>{category}</strong><hr>
-          <ul >
-            {#each items as item}
-              <li>
-                {item.name} (x{item.quantity})
-                {#if item.comment}
-                  <br><small><em>הערה: {item.comment}</em></small>
+            <td style="max-width:300px; min-width:120px;">
+              <div class="accordion-content"
+                style="overflow:hidden; transition:max-height 0.32s cubic-bezier(.45,1.65,.35,1.06), opacity 0.28s;"
+                class:expanded={expandedRows.has(order.order_num)}
+              >
+                {#if order.parsed_data?.items}
+                  <ul class="order-items">
+                    {#each Object.entries(groupItemsByCategory(order.parsed_data.items)) as [category, items]}
+                      <li>
+                        <strong>{category}</strong><hr>
+                        <ul>
+                          {#each items as item}
+                            <li>
+                              {item.name} (x{item.quantity})
+                              {#if item.comment}
+                                <br><small><em>הערה: {item.comment}</em></small>
+                              {/if}
+                            </li>
+                          {/each}
+                        </ul>
+                      </li>
+                    {/each}
+                  </ul>
+                {:else}
+                  <em>אין פריטים</em>
                 {/if}
-              </li>
-            {/each}
-          </ul>
-        </li>
-      {/each}
-    </ul>
-  {:else}
-    <em>אין פריטים</em>
-  {/if}
-</td>
+              </div>
+              {#if order.parsed_data?.items && Object.values(order.parsed_data.items).length > 2}
+                <button
+                  class="show-more-btn"
+                  onclick={() => toggleRowExpansion(order.order_num)}
+                >
+                  {expandedRows.has(order.order_num) ? 'הסתר' : 'הצג הכל'}
+                </button>
+              {/if}
+            </td>
+
 
             <td class="rtl" style="max-width:30px">{order.parsed_data?.customer?.dateOfSuplay || '—'} <br>
                             {order.parsed_data?.customer?.houerOfSuplay || '—'} <br>
@@ -360,6 +386,38 @@ function showAll() {
 </div>
 
 <style>
+.accordion-content {
+  max-height: 120px;
+  opacity: 0.8;
+  position: relative;
+  transition: max-height 0.3s cubic-bezier(.45,1.65,.35,1.06), opacity 0.28s;
+  overflow: hidden;
+}
+
+.accordion-content.expanded {
+  max-height: 900px; /* enough for most content */
+  opacity: 1;
+  transition: max-height 0.5s cubic-bezier(.45,1.65,.35,1.06), opacity 0.36s;
+}
+
+.show-more-btn {
+  margin-top: 6px;
+  margin-right: calc(100% - 85px);
+  margin-left: 0;
+  background: #f2f2ff;
+  color: #282828;
+  border: 1px solid #c8c8c8;
+  border-radius: 8px;
+  padding: 3px 14px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.22s;
+  direction: rtl;
+}
+.show-more-btn:hover {
+  background: #e3eafd;
+}
 
   .rtl-container {
     direction: rtl;

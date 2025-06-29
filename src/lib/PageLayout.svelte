@@ -34,23 +34,25 @@
 
 <style>
 .centered-login {
-  min-height: 100vh;
+  min-height: 90vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0;
+  animation: showAftrrOneSecond 0.3s ease-in-out forwards;
 }
 .logout-left {
   position: fixed;
-  top: 16px;
-  left: 16px;
+  top: 15px;
+  left: 15px;
   z-index: 1112;
   background: #ed1c24;
   color: #fff;
   border: none;
   border-radius: 8px;
-  padding: 0.6em 1.5em;
-  font-size: 1.08em;
-  font-weight: 600;
+  padding: 0.2em 1em;
+  font-size: 0.75em;
+  font-weight: 400;
   cursor: pointer;
   box-shadow: 0 2px 10px #0001;
   transition: background 0.17s;
@@ -71,7 +73,7 @@
   padding: 2.5em 2em 2em 2em;
   font-size: 1.13em;
   color: #262626;
-  max-width: 340px;
+  max-width: 450px;
   text-align: center;
 }
 .logout-confirm-box button {
@@ -94,5 +96,10 @@
 .page-content {
   padding: 2em 1.5em;
   margin-top: 50px;
+}
+
+@keyframes showAftrrOneSecond {
+  0%, 90% { opacity: 0; }
+  100% { opacity: 1; }
 }
 </style>

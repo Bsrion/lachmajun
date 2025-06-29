@@ -16,8 +16,8 @@ import UserConnected from '../lib/UserConnected.svelte';
 
 <Layout>
 			<Heder_hybid client:visible/>
-			<a href="/newOrder"><img src="/logo_pasha.svg" alt="Astro Logo" class="logo" />
-			<h1 class=" title">מערכת לניהול הזמנות</h1></a>
+			<div class="container"><img src="/logo_pasha.svg" alt="Astro Logo" class="logo" />
+			<a href="/newOrder"><h1 class="title">מערכת לניהול הזמנות</h1></a></div>
 			  <UserConnected client:visible />
 			  
 			<Login client:visible/>
@@ -28,11 +28,19 @@ import UserConnected from '../lib/UserConnected.svelte';
 	a {
 		text-decoration: none;
 		color: inherit;
+		cursor: pointer;
 	}
 body {
 		background-color: #f0f0f0;
 		font-family: 'Arial', sans-serif;
 
+	}
+	.container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		background-color: #f0f0f0;
 	}
 	.logo {
 		width: 550px;
@@ -51,7 +59,6 @@ body {
 		opacity: 0;
 		font-weight: 500;
 		font-family: 'Arial', sans-serif;
-		margin: 25px auto ;
 		padding: 5px 35px;
 		background-color: #ed1c24;
 		animation: pasha 0.5s ease-in-out 1.5s forwards;

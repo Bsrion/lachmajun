@@ -3,10 +3,14 @@ import Layout from '../layouts/Layout.astro';
 import Heder_hybid from '../components/header.svelte';
 import "../styles/global.css";
 import TafritimAdminComponent from '../components/admin/MenuEditorAdmin.svelte';
+import PageLayout from '../lib/PageLayout.svelte';
+
 ---
 
 <Layout>
 <Heder_hybid client:visible />
-<TafritimAdminComponent client:load />
+            <PageLayout client:load>
 
+<TafritimAdminComponent client:load />
+            </PageLayout>
 </Layout>
